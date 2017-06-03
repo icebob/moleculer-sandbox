@@ -1,0 +1,44 @@
+{
+  "name": "sandbox",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "ci": "jest --watch",
+    "test": "jest --coverage"
+  },
+  "keywords": [
+    "microservices",
+    "moleculer"
+  ],
+  "author": "",
+  "devDependencies": {
+    "eslint": "3.19.0",
+    "jest": "20.0.4",
+    "jest-cli": "20.0.4",
+    "nodemon": "1.11.0"
+  },
+  "dependencies": {
+    "lodash": "4.17.4",
+    "moleculer": "^0.7.6",
+    "moleculer-db": "0.1.2",
+    "moleculer-fake": "1.0.1",
+    "moleculer-web": "^0.3.0"
+  },
+  "engines": {
+    "node": ">= 6.x.x"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "rootDir": "./src",
+    "roots": [
+      "../test"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/test/"
+    ]
+  }
+}
