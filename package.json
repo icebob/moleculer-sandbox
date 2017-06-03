@@ -7,8 +7,7 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "ci": "jest --watch",
-    "test": "jest --coverage",
-    "deploy": "now"
+    "test": "jest --coverage"
   },
   "keywords": [
     "microservices",
@@ -19,11 +18,11 @@
     "eslint": "3.19.0",
     "jest": "20.0.4",
     "jest-cli": "20.0.4",
-    "nodemon": "1.11.0",
-    "now": "6.3.0"
+    "nodemon": "1.11.0"
   },
   "dependencies": {
     "lodash": "4.17.4",
+    "mkdirp": "0.5.1",
     "moleculer": "^0.7.6",
     "moleculer-db": "0.1.2",
     "moleculer-fake": "1.0.1",

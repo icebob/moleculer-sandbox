@@ -1,9 +1,14 @@
 "use strict";
 
-let { ServiceBroker } = require("moleculer");
+const path = require("path");
+const mkdir = require("mkdirp").sync;
+const { ServiceBroker } = require("moleculer");
+
+// Create data folder
+mkdir(path.join(__dirname, "data"));
 
 // Create broker
-let broker = new ServiceBroker({
+const broker = new ServiceBroker({
 	logger: console,
 	logLevel: process.env.LOG_LEVEL || "info"
 });
@@ -13,7 +18,9 @@ broker.loadServices("./services");
 
 // Start server
 broker.start().then(() => {
-
+	
+	broker.repl();
 });
+
 
 module.exports = broker;
