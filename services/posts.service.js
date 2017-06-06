@@ -27,6 +27,7 @@ module.exports = {
 				if (users.length == 0) {
 					this.logger.info("Waiting for `users` seed...");
 					setTimeout(this.seedDB, 1000);
+					return;
 				}
 
 				// Create fake posts
@@ -49,6 +50,7 @@ module.exports = {
 				if (err.name == "ServiceNotFoundError") {
 					this.logger.info("Waiting for `users` service...");
 					setTimeout(this.seedDB, 1000);
+					return;
 				} else
 					return Promise.reject(err);
 			});
