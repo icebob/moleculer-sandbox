@@ -8,6 +8,13 @@ module.exports = {
 
 	settings: {
 		JWT_SECRET: process.env.JWT_SECRET || "moleculer-jwt-secret",
+		socialAuth: {
+			google: {
+				clientID: process.env.GOOGLE_CLIENTID,
+				clientSecret: process.env.GOOGLE_CLIENTSECRET
+			},			
+		},
+
 		actionNames: {
 			loginUser: "users.authenticate",
 			getUser: "users.model"
@@ -28,6 +35,21 @@ module.exports = {
 					.then(ctx => ctx.call(this.settings.actionNames.loginUser, ctx.params))
 					.then(this.generateToken)
 					.then(token => ({ token }));
+			}
+		},
+
+		socialLogin: {
+			params: {
+				provider: "string"
+			},
+			handler(ctx) {
+				this.logger.info("socialLogin", ctx.params);
+			}
+		},
+
+		socialCallback: {
+			handler(ctx) {
+				this.logger.info("socialCallback", ctx.params);
 			}
 		},
 

@@ -18,13 +18,14 @@ module.exports = {
 
 				whitelist: [
 					"auth.login",
-					"auth.callback"
+					"auth.socialLogin",
+					"auth.socialCallback"
 				],
 
 				aliases: {
 					"POST /local": "auth.login",
 					"GET /social/:provider": "auth.socialLogin",
-					"GET /social/:provider/callback": "auth.callback"
+					"GET /social/:provider/callback": "auth.socialCallback"
 				},
 
 				// Use bodyparser module
