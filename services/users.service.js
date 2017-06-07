@@ -2,12 +2,35 @@
 
 const path = require("path");
 const _ = require("lodash");
+const { MoleculerError } = require("moleculer").Errors;
 const DbService = require("moleculer-db");
 
 module.exports = {
 	name: "users",
 	mixins: DbService,
 	adapter: new DbService.MemoryAdapter({ filename: path.join(__dirname, "..", "data", "users.db") }),
+
+	actions: {
+		/**
+		 * Authenticate a user
+		 */
+		authenticate: {
+			params: {
+				username: "string",
+				password: "string"
+			},
+			handler(ctx) {
+				return Promise.resolve()
+					.then(() => this.adapter.db.findOne({ username: ctx.params.username }))
+					.then(user => {
+						if (user)
+							return user;
+						
+						return Promise.reject(new MoleculerError("User is not exist!"));
+					});
+			}
+		}
+	},
 
 	methods: {
 		seedDB() {
