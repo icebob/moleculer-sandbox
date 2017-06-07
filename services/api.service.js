@@ -9,10 +9,15 @@ module.exports = {
 		port: process.env.PORT || 3000,
 
 		routes: [{
+			path: "/api",
 			aliases: {
 				"REST posts": "posts",
 				"REST users": "users"
 			}
-		}]
+		}],
+
+		assets: {
+			folder: "./www"
+		}
 	}
 };

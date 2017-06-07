@@ -12,20 +12,38 @@ module.exports = {
 	methods: {
 		seedDB() {
 			this.logger.info("Seed Users DB...");
-			// Create fake users
-			return Promise.all(_.times(10, () => {
-				return this.broker.call("fake.user").then(fakeUser => {
-					return this.adapter.insert({
-						username: fakeUser.userName,
-						fullName: fakeUser.firstName + " " + fakeUser.lastName,
-						email: fakeUser.email,
-						createdAt: new Date(), 
-						updatedAt: null
+			// Create admin user
+			return Promise.resolve()
+				.then(() => this.adapter.insert({
+					username: "admin",
+					password: "admin1234",
+					fullName: "Administrator",
+					email: "admin@sandbox.moleculer.services",
+					createdAt: new Date()
+				}))
+				.then(() => this.adapter.insert({
+					username: "test",
+					password: "test1234",
+					fullName: "Test user",
+					email: "test@sandbox.moleculer.services",
+					createdAt: new Date()
+				}))
+				// Create fake users
+				.then(() => Promise.all(_.times(8, () => {
+					return this.broker.call("fake.user").then(fakeUser => {
+						return this.adapter.insert({
+							username: fakeUser.userName,
+							password: fakeUser.password,
+							fullName: fakeUser.firstName + " " + fakeUser.lastName,
+							email: fakeUser.email,
+							createdAt: new Date(), 
+							updatedAt: null
+						});
 					});
+				})))
+				.then(() => {
+					this.adapter.findAll({}).then(res => console.log(`Generated ${res.length} users!`));
 				});
-			})).then(() => {
-				this.adapter.findAll({}).then(res => console.log(`Generated ${res.length} users!`));
-			});
 		}
 	},
 
