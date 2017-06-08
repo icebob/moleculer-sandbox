@@ -6,6 +6,25 @@ const { MoleculerError } 	= require("moleculer").Errors;
 const ApiGateway 			= require("moleculer-web");
 const { ForbiddenError, UnAuthorizedError, ERR_NO_TOKEN, ERR_INVALID_TOKEN } = ApiGateway.Errors;
 
+const passport 				= require("passport");
+const GoogleStrategy 		= require("passport-google-oauth20").Strategy;
+const queryString 			= require("querystring");
+
+passport.use(new GoogleStrategy({
+	clientID: process.env.GOOGLE_CLIENT_ID,
+	clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+	callbackURL: "http://localhost:4000/auth/social/google/callback"
+},
+	function (accessToken, refreshToken, profile, cb) {
+		console.log("accessToken", accessToken);
+		console.log("refreshToken", refreshToken);
+		console.log("profile", profile);
+		return cb(null, {});
+	}
+));
+
+let passportInit = passport.initialize();
+
 module.exports = {
 	name: "api",
 	mixins: ApiGateway,
@@ -17,15 +36,38 @@ module.exports = {
 				path: "/auth",
 
 				whitelist: [
-					"auth.login",
-					"auth.socialLogin",
-					"auth.socialCallback"
+					"auth.login"
 				],
 
 				aliases: {
 					"POST /local": "auth.login",
-					"GET /social/:provider": "auth.socialLogin",
-					"GET /social/:provider/callback": "auth.socialCallback"
+					"GET /social/:provider"(route, req, res) {
+						this.logger.info("socialLogin");
+						passportInit(req, res, () => {
+							passport.authenticate("google", { scope: "profile email" })(req, res);
+						});
+						
+					},
+					"GET /social/:provider/callback"(route, req, res) {
+						this.logger.info("socialLoginCallback");
+						const next = () => {
+							// Successful authentication, redirect home.
+							this.logger.info("Successful authentication");
+							res.writeHead(302, {
+								"Location": "/"
+							});
+							res.end();
+						};
+						passportInit(req, res, () => {
+							const questionIdx = req.url.indexOf("?", 1);
+							if (questionIdx !== -1) {
+								const query = queryString.parse(req.url.substring(questionIdx + 1));
+								req.query = query;
+							}							
+							const fn = passport.authenticate("google", { failureRedirect: "/login" });
+							fn(req, res, next);
+						});
+					}
 				},
 
 				// Use bodyparser module

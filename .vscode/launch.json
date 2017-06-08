@@ -12,9 +12,9 @@
 			"program": "${workspaceRoot}\\index.js",
 			"cwd": "${workspaceRoot}",
 			"env": {
-				"PORT": 4000
+				"PORT": "4000"
 			}
-		},
+		},		
 		{
 			"type": "node",
 			"request": "launch",
@@ -25,6 +25,13 @@
 			"runtimeArgs": [
                 "--nolazy"
             ]
-		}
+		},
+		{
+			"type": "node",
+			"request": "attach",
+			"name": "Attach to Process",
+			"port": 5858,
+			"restart": true
+		}		
 	]
 }

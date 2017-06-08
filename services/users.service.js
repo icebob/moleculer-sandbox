@@ -2,8 +2,27 @@
 
 const path = require("path");
 const _ = require("lodash");
+const bcrypt = require("lodash");
 const { MoleculerError } = require("moleculer").Errors;
 const DbService = require("moleculer-db");
+
+function hashPassword(password) {
+	return new Promise((resolve, reject) => {
+		bcrypt.genSalt(10, function (error, salt) {
+			if (error) {
+				return reject(error);
+			}
+
+			bcrypt.hash(password, salt, function (error, hashedPassword) {
+				if (error) {
+					return reject(error);
+				}
+
+				resolve(hashedPassword);
+			});
+		});
+	});
+}
 
 module.exports = {
 	name: "users",
@@ -25,7 +44,7 @@ module.exports = {
 					.then(user => {
 						if (user)
 							return user;
-						
+
 						return Promise.reject(new MoleculerError("User is not exist!"));
 					});
 			}
@@ -59,7 +78,7 @@ module.exports = {
 							password: fakeUser.password,
 							fullName: fakeUser.firstName + " " + fakeUser.lastName,
 							email: fakeUser.email,
-							createdAt: new Date(), 
+							createdAt: new Date(),
 							updatedAt: null
 						});
 					});
@@ -75,7 +94,7 @@ module.exports = {
 			if (count == 0) {
 				this.seedDB();
 			}
-		});		
+		});
 	}
-	
+
 };

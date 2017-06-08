@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js",
+    "dev": "nodemon --debug index.js",
     "start": "node index.js",
     "ci": "jest --watch",
     "test": "jest --coverage"
@@ -21,13 +21,16 @@
     "nodemon": "1.11.0"
   },
   "dependencies": {
+    "dotenv": "4.0.0",
     "jsonwebtoken": "7.4.1",
     "lodash": "4.17.4",
     "mkdirp": "0.5.1",
     "moleculer": "^0.7.6",
     "moleculer-db": "0.1.2",
     "moleculer-fake": "1.0.1",
-    "moleculer-web": "0.3.3"
+    "moleculer-web": "0.3.3",
+    "passport": "0.3.2",
+    "passport-google-oauth20": "1.0.0"
   },
   "engines": {
     "node": ">= 6.x.x"

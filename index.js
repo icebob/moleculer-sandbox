@@ -1,5 +1,7 @@
 "use strict";
 
+require("dotenv").config();
+
 const path = require("path");
 const mkdir = require("mkdirp").sync;
 const { ServiceBroker } = require("moleculer");
