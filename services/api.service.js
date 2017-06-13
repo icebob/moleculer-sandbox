@@ -80,9 +80,9 @@ module.exports = {
 			{
 				path: "/api",
 
-				authorization: true,
+				authorization: false,
 
-				roles: ["admin"],
+				//roles: ["admin"],
 
 				whitelist: [
 					"posts.*"
