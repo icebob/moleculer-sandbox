@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon --debug index.js",
     "start": "node index.js",
+    "start2": "moleculer-runner services",
     "ci": "jest --watch",
     "test": "jest --coverage"
   },
@@ -25,7 +26,7 @@
     "jsonwebtoken": "7.4.1",
     "lodash": "4.17.4",
     "mkdirp": "0.5.1",
-    "moleculer": "^0.7.6",
+    "moleculer": "0.8.0",
     "moleculer-db": "0.1.2",
     "moleculer-fake": "1.0.1",
     "moleculer-web": "0.3.3",
