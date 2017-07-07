@@ -136,7 +136,7 @@ module.exports = {
 					if (route.opts.roles.indexOf(decoded.role) === -1)
 						return this.Promise.reject(new ForbiddenError());
 
-					// If authorization was succes, we set the user entity to ctx.meta
+					// If authorization was success, we set the user entity to ctx.meta
 					return ctx.call("users.get", { id: decoded.id }).then(user => {
 						ctx.meta.user = user;
 						this.logger.info("Logged in user", user);
