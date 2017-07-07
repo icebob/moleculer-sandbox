@@ -8,6 +8,7 @@
     "start": "node index.js",
     "start2": "moleculer-runner services",
     "ci": "jest --watch",
+    "deps": "npm-check -u",
     "test": "jest --coverage"
   },
   "keywords": [
@@ -16,20 +17,21 @@
   ],
   "author": "",
   "devDependencies": {
-    "eslint": "4.0.0",
+    "eslint": "4.1.1",
     "jest": "20.0.4",
     "jest-cli": "20.0.4",
-    "nodemon": "1.11.0"
+    "nodemon": "1.11.0",
+    "npm-check": "5.4.4"
   },
   "dependencies": {
     "dotenv": "4.0.0",
     "jsonwebtoken": "7.4.1",
     "lodash": "4.17.4",
     "mkdirp": "0.5.1",
-    "moleculer": "0.8.0",
-    "moleculer-db": "0.1.2",
-    "moleculer-fake": "1.0.1",
-    "moleculer-web": "0.3.3",
+    "moleculer": "0.8.2",
+    "moleculer-db": "0.3.3",
+    "moleculer-fake": "1.0.3",
+    "moleculer-web": "0.4.0",
     "passport": "0.3.2",
     "passport-google-oauth20": "1.0.0"
   },
