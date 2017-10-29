@@ -6,15 +6,17 @@ const DbService = require("moleculer-db");
 
 module.exports = {
 	name: "posts",
-	mixins: DbService,
-	adapter: new DbService.MemoryAdapter({ filename: path.join(__dirname, "..", "data", "posts.db") }),
+	mixins: [DbService],
+	dependencies: ["users", "fake"],
+	adapter: new DbService.MemoryAdapter({ filename: path.resolve("data", "posts.db") }),
 
 	settings: {
+		fields: ["_id", "title", "content", "author", "votes", "createdAt", "updatedAt"],
 		populates: {
 			"author": {
-				action: "users.model",
+				action: "users.get",				
 				params: {
-					fields: "username fullName email"
+					fields: ["username", "fullName", "email"]
 				}
 			}
 		}
@@ -43,7 +45,7 @@ module.exports = {
 						});
 					});
 				})).then(() => {
-					this.adapter.findAll({}).then(res => console.log(`Generated ${res.length} posts!`));
+					this.adapter.count().then(count => this.logger.info(`Generated ${count} posts!`));
 				});
 
 			}).catch(err => {

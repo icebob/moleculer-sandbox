@@ -2,32 +2,19 @@
 
 const path = require("path");
 const _ = require("lodash");
-const bcrypt = require("lodash");
-const { MoleculerError } = require("moleculer").Errors;
+const bcrypt = require("bcrypt");
+const { MoleculerClientError } = require("moleculer").Errors;
 const DbService = require("moleculer-db");
-
-function hashPassword(password) {
-	return new Promise((resolve, reject) => {
-		bcrypt.genSalt(10, function (error, salt) {
-			if (error) {
-				return reject(error);
-			}
-
-			bcrypt.hash(password, salt, function (error, hashedPassword) {
-				if (error) {
-					return reject(error);
-				}
-
-				resolve(hashedPassword);
-			});
-		});
-	});
-}
 
 module.exports = {
 	name: "users",
-	mixins: DbService,
-	adapter: new DbService.MemoryAdapter({ filename: path.join(__dirname, "..", "data", "users.db") }),
+	mixins: [DbService],
+	dependencies: ["fake"],
+	adapter: new DbService.MemoryAdapter({ filename: path.resolve("data", "users.db") }),
+
+	settings: {
+		fields: ["_id", "username", "fullName", "email", "avatar", "author"]
+	},
 
 	actions: {
 		/**
@@ -42,10 +29,15 @@ module.exports = {
 				return Promise.resolve()
 					.then(() => this.adapter.db.findOne({ username: ctx.params.username }))
 					.then(user => {
-						if (user)
-							return user;
+						if (!user)
+							return Promise.reject(new MoleculerClientError("User is not exist!", 400, "USER_NOT_FOUND"));
 
-						return Promise.reject(new MoleculerError("User is not exist!"));
+						return bcrypt.compare(ctx.params.password, user.password).then(function(res) {
+							if (!res)
+								return Promise.reject(new MoleculerClientError("Wrong password!", 400, "WRONG_PASSWORD"));
+							
+							return user;							
+						});
 					});
 			}
 		}
@@ -54,37 +46,41 @@ module.exports = {
 	methods: {
 		seedDB() {
 			this.logger.info("Seed Users DB...");
-			// Create admin user
 			return Promise.resolve()
+				
+				// Create admin user
 				.then(() => this.adapter.insert({
 					username: "admin",
-					password: "admin1234",
+					password: bcrypt.hashSync("admin1234", 10),
 					fullName: "Administrator",
 					email: "admin@sandbox.moleculer.services",
 					createdAt: new Date()
 				}))
+				// Create test user
 				.then(() => this.adapter.insert({
 					username: "test",
-					password: "test1234",
+					password: bcrypt.hashSync("test1234", 10),
 					fullName: "Test user",
 					email: "test@sandbox.moleculer.services",
 					createdAt: new Date()
 				}))
+
 				// Create fake users
 				.then(() => Promise.all(_.times(8, () => {
 					return this.broker.call("fake.user").then(fakeUser => {
 						return this.adapter.insert({
 							username: fakeUser.userName,
-							password: fakeUser.password,
+							password: bcrypt.hashSync(fakeUser.password, 10),
 							fullName: fakeUser.firstName + " " + fakeUser.lastName,
 							email: fakeUser.email,
+							avatar: fakeUser.avatar,
 							createdAt: new Date(),
 							updatedAt: null
 						});
 					});
 				})))
 				.then(() => {
-					this.adapter.findAll({}).then(res => console.log(`Generated ${res.length} users!`));
+					this.adapter.count().then(count => this.logger.info(`Generated ${count} users!`));
 				});
 		}
 	},

@@ -4,11 +4,11 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
-	<title>Document</title>
+	<title>Login</title>
 </head>
 <body>
 	<h1>Login</h1>
-	<form action="/auth/login" method="post">
+	<form action="/auth/local" method="post">
 
 		<p>
 			<label for="username">Username:</label><br />
@@ -22,6 +22,9 @@
 
 		<p>
 			<input type="submit">
+		</p>
+		<p>
+			<a href="/auth/social/google">Login with Google account</a>
 		</p>
 	</form>	
 </body>

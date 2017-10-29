@@ -54,14 +54,14 @@ module.exports = {
 		 * @returns 
 		 */
 		verifyToken(ctx) {
-			return this.verify(ctx.params.token, this.settings.JWT_SECRET);
+			return this.jwtVerify(ctx.params.token, this.settings.JWT_SECRET);
 		}
 	},
 
 	created() {
 		// Create promisified encode & verify methods
-		this.encode = this.Promise.promisify(jwt.sign);
-		this.verify = this.Promise.promisify(jwt.verify);
+		this.jwtEncode = this.Promise.promisify(jwt.sign);
+		this.jwtVerify = this.Promise.promisify(jwt.verify);
 
 	},
 
@@ -73,7 +73,7 @@ module.exports = {
 		 * @returns 
 		 */
 		generateToken(user) {
-			return this.encode(_.pick(user, ["_id", "role"]), this.settings.JWT_SECRET);
+			return this.jwtEncode(_.pick(user, ["_id", "role"]), this.settings.JWT_SECRET);
 		}
 	}
 };

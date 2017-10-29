@@ -8,13 +8,13 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Launch program",
-			"program": "${workspaceRoot}\\index.js",
+			"name": "Debug",
+			"program": "${workspaceRoot}\\node_modules\\moleculer\\bin\\moleculer-runner.js",
 			"cwd": "${workspaceRoot}",
-			"env": {
-				"PORT": "4000"
-			}
-		},		
+			"args": [
+				"services"
+			]
+		},
 		{
 			"type": "node",
 			"request": "launch",
@@ -25,13 +25,6 @@
 			"runtimeArgs": [
                 "--nolazy"
             ]
-		},
-		{
-			"type": "node",
-			"request": "attach",
-			"name": "Attach to Process",
-			"port": 5858,
-			"restart": true
-		}		
+		}
 	]
 }
