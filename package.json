@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
+    "deps": "npm-check -u",
     "start": "node index.js",
     "ci": "jest --watch",
     "test": "jest --coverage"
@@ -15,19 +16,20 @@
   ],
   "author": "",
   "devDependencies": {
-    "eslint": "3.19.0",
-    "jest": "20.0.4",
-    "jest-cli": "20.0.4",
-    "nodemon": "1.11.0"
+    "eslint": "4.10.0",
+    "jest": "21.2.1",
+    "jest-cli": "21.2.1",
+    "nodemon": "1.12.1",
+    "npm-check": "5.4.5"
   },
   "dependencies": {
-    "jsonwebtoken": "7.4.1",
+    "jsonwebtoken": "8.1.0",
     "lodash": "4.17.4",
     "mkdirp": "0.5.1",
-    "moleculer": "^0.7.6",
-    "moleculer-db": "0.1.2",
-    "moleculer-fake": "1.0.1",
-    "moleculer-web": "0.3.3"
+    "moleculer": "0.11.5",
+    "moleculer-db": "0.6.0",
+    "moleculer-fake": "1.0.8",
+    "moleculer-web": "0.5.2"
   },
   "engines": {
     "node": ">= 6.x.x"
