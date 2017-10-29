@@ -32,21 +32,6 @@ module.exports = {
 			}
 		},
 
-		socialLogin: {
-			params: {
-				provider: "string"
-			},
-			handler(ctx) {
-				this.logger.info("socialLogin", ctx.params);
-			}
-		},
-
-		socialCallback: {
-			handler(ctx) {
-				this.logger.info("socialCallback", ctx.params);
-			}
-		},
-
 		/**
 		 * Verify a JWT token
 		 * 

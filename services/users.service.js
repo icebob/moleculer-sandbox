@@ -36,6 +36,7 @@ module.exports = {
 							if (!res)
 								return Promise.reject(new MoleculerClientError("Wrong password!", 400, "WRONG_PASSWORD"));
 							
+							// TODO: transform
 							return user;							
 						});
 					});

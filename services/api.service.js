@@ -1,6 +1,7 @@
 "use strict";
 
 const { MoleculerError } 	= require("moleculer").Errors;
+const Auth					= require("./routes/auth");
 
 const ApiGateway 			= require("moleculer-web");
 const { ForbiddenError, UnAuthorizedError, ERR_NO_TOKEN, ERR_INVALID_TOKEN } = ApiGateway.Errors;
@@ -9,10 +10,10 @@ module.exports = {
 	name: "api",
 	mixins: ApiGateway,
 	settings: {
-		port: process.env.PORT || 3000,
+		port: process.env.PORT || 4000,
 
 		routes: [
-			require("./routes/auth"),
+			Auth.route,
 			require("./routes/api"),
 			require("./routes/admin"),
 		],
@@ -62,5 +63,9 @@ module.exports = {
 				return this.Promise.reject(new UnAuthorizedError(ERR_NO_TOKEN));
 		}
 
-	}	
+	},
+	
+	created() {
+		Auth.initialize.call(this);
+	}
 };
