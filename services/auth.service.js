@@ -1,19 +1,13 @@
 "use strict";
 
-const _ 		= require("lodash");
-const jwt 		= require("jsonwebtoken");
+const _ = require("lodash");
+const jwt = require("jsonwebtoken");
 
 module.exports = {
 	name: "auth",
 
 	settings: {
 		JWT_SECRET: process.env.JWT_SECRET || "moleculer-jwt-secret",
-		socialAuth: {
-			google: {
-				clientID: process.env.GOOGLE_CLIENTID,
-				clientSecret: process.env.GOOGLE_CLIENTSECRET
-			},			
-		},
 
 		actionNames: {
 			loginUser: "users.authenticate",
@@ -68,6 +62,7 @@ module.exports = {
 		// Create promisified encode & verify methods
 		this.encode = this.Promise.promisify(jwt.sign);
 		this.verify = this.Promise.promisify(jwt.verify);
+
 	},
 
 	methods: {

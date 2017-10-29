@@ -4,4 +4,6 @@ coverage/
 npm-debug.log
 stats.json
 yarn-error.log
+!.env.example
+.env
 data/
