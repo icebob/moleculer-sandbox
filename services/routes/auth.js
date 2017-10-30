@@ -11,6 +11,11 @@ const FacebookStrategy  		= require("passport-facebook").Strategy;
 const GithubStrategy  			= require("passport-github").Strategy;
 const TwitterStrategy 			= require("passport-twitter").Strategy;
 
+// https://medium.com/netscape/building-a-budget-manager-with-vue-js-and-node-js-part-i-f3d7311822a8
+// https://medium.com/@gdomaradzki/building-a-budget-manager-with-vue-js-and-node-js-part-ii-f08c410c944d
+// https://medium.com/@gdomaradzki/building-a-budget-manager-with-vue-js-and-node-js-part-iii-540a77a7ddee
+
+
 const noop = () => {};
 
 const Passports = {

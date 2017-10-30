@@ -16,11 +16,12 @@ module.exports = {
 			Auth.route,
 			require("./routes/api"),
 			require("./routes/admin"),
+			require("./routes/root"),
 		],
 
-		assets: {
+		/*assets: {
 			folder: "./www"
-		}
+		}*/
 	},
 
 	methods: {
