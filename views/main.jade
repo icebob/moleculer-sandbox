@@ -1,1 +1,15 @@
-h1 Hello #{name}!
+doctype html
+html(lang='en')
+	head
+		meta(charset='UTF-8')
+		meta(name='viewport', content='width=device-width, initial-scale=1.0')
+		meta(http-equiv='X-UA-Compatible', content='ie=edge')
+		title Main
+	body
+		if user
+			h1 Hello #{user.name}
+			pre #{user}
+			a(href='/logout', rel='button')
+				| Logout
+		else
+			p Not authenticated!

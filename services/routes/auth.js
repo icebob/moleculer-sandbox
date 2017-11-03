@@ -199,8 +199,8 @@ const Passports = {
  * @param {any} params 
  * @returns 
  */
-function socialLogin(route, req, res, params) {
-	const provider = params.provider;
+function socialLogin(req, res) {
+	const provider = req.$params.provider;
 	const pp = this.passports[provider];
 
 	if (!pp) {
@@ -208,7 +208,15 @@ function socialLogin(route, req, res, params) {
 	}
 
 	this.logger.info(`Social login with '${provider}'...`);
-	passport.authenticate(provider, pp.authOptions)(req, res, noop);
+	passport.authenticate(provider, pp.authOptions)(req, res, err => {
+		if (err)
+			return this.sendError(req, res, err);
+
+		// Successful authentication, redirect home.
+		this.logger.info("Successful authentication");
+		this.logger.info("User", req.user);
+		this.sendRedirect(res, "/main", 302);
+	});
 }
 
 /**
@@ -219,8 +227,8 @@ function socialLogin(route, req, res, params) {
  * @param {any} res 
  * @param {any} params 
  */
-function socialLoginCallback(route, req, res, params) {
-	const provider = params.provider;
+function socialLoginCallback(req, res) {
+	const provider = req.$params.provider;
 	//const pp = Passports[provider];
 	this.logger.info(`Social login callback for '${provider}' is fired.`);
 
@@ -231,7 +239,7 @@ function socialLoginCallback(route, req, res, params) {
 		// Successful authentication, redirect home.
 		this.logger.info("Successful authentication");
 		this.logger.info("User", req.user);
-		this.sendRedirect(res, "/", 302);
+		this.sendRedirect(res, "/main", 302);
 	});
 }
 
