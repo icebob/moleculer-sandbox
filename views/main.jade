@@ -8,7 +8,7 @@ html(lang='en')
 	body
 		if user
 			h1 Hello #{user.name}
-			pre #{user}
+			pre=JSON.stringify(user, null, 2)
 			a(href='/logout', rel='button')
 				| Logout
 		else

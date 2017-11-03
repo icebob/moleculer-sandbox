@@ -1,8 +1,7 @@
 "use strict";
 
 const { MoleculerClientError } 	= require("moleculer").Errors;
-const session 					= require("express-session");
-const cookieParser 				= require("cookie-parser");
+const common					= require("./common");
 
 const passport 					= require("passport");
 const LocalStrategy 			= require("passport-local").Strategy;
@@ -15,8 +14,6 @@ const TwitterStrategy 			= require("passport-twitter").Strategy;
 // https://medium.com/@gdomaradzki/building-a-budget-manager-with-vue-js-and-node-js-part-ii-f08c410c944d
 // https://medium.com/@gdomaradzki/building-a-budget-manager-with-vue-js-and-node-js-part-iii-540a77a7ddee
 
-
-const noop = () => {};
 
 const Passports = {
 	"local": {
@@ -253,24 +250,12 @@ const Auth = {
 		],
 
 		use: [
-			// parse cookie from header
-			cookieParser(),
-
-			// initialize session
-			session({
-				secret: "moleculer-sandbox",
-				resave: false,
-				saveUninitialized: true
-			}),
-
-			// passport init
-			passport.initialize(),
-			passport.session()
+			...common.middlewares
 		],
 
 		aliases: {
 			"/:provider": socialLogin,
-			"GET /:provider/callback": socialLoginCallback
+			"GET /:provider/callback": socialLoginCallback,
 		},
 
 		// Use bodyparser modules
@@ -301,19 +286,11 @@ const Auth = {
 
 		passport.deserializeUser((id, done) => {
 			this.logger.info("Deserializer user ID:", id);
-			/*User.findOne({
-				_id: id
-			}, "-password", function(err, user) {
-				if (err)
-					return done(err);
-				
-				// Check that the user is not disabled or deleted
-				if (user.status !== 1)
-					return done(null, false);
-
-				return done(null, user);
-			});*/
-			done(null, {});
+			this.broker.call("users.get", { id })
+				.then(user => {
+					done(null, user);
+				})
+				.catch(err => done(err));
 		});
 
 	}

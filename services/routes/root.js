@@ -1,35 +1,19 @@
 "use strict";
 
-const { serveStatic } = require("moleculer-web");
-const path = require("path");
-const cons = require("consolidate");
+const { serveStatic } 			= require("moleculer-web");
+const common					= require("./common");
+const path 						= require("path");
 
-const session 					= require("express-session");
-const cookieParser 				= require("cookie-parser");
+// route middleware to make sure a user is logged in
+function isLoggedIn(req, res, next) {
 
-const passport 					= require("passport");
+	// if user is authenticated in the session, carry on 
+	if (req.isAuthenticated())
+		return next();
 
-function renderer(type, folder) {
-	const _render = cons[type];
-	return function render(req, res, next) {
-		res.render = function(file, opts) {
-			_render(path.resolve(folder, file), opts, (err, html) => {
-				if (err) 
-					return req.$service.sendError(req, res, err);
-				
-				res.writeHead(200, {
-					"Content-type": "text/html"
-				});
-				res.end(html);
-
-				req.$service.logResponse(req, res);
-			});
-		};
-
-		next();
-	};
+	// if they aren't redirect them to the home page
+	req.$service.sendRedirect(res, "/login.html");
 }
-
 
 module.exports = {
 	path: "/",
@@ -37,27 +21,17 @@ module.exports = {
 	authorization: false,
 
 	use: [
-		// parse cookie from header
-		cookieParser(),
-
-		// initialize session
-		session({
-			secret: "moleculer-sandbox",
-			resave: false,
-			saveUninitialized: true
-		}),
-
-		// passport init
-		passport.initialize(),
-		passport.session(),
-
-		renderer("jade", "./views"),
+		...common.middlewares,
 		serveStatic(path.resolve("./www"))
 	],
 
 	aliases: {
-		"/main"(req, res) {
+		"/main": [isLoggedIn, (req, res) => {
 			res.render("main.jade", { user: req.user });
+		}],
+		"/logout"(req, res) {
+			req.logout();
+			this.sendRedirect(res, "/");
 		}
 	}
 };
