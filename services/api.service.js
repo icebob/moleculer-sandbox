@@ -1,9 +1,5 @@
 "use strict";
 
-const { MoleculerError } 		= require("moleculer").Errors;
-const Auth						= require("./routes/auth");
-const common					= require("./routes/common");
-
 const path 						= require("path");
 const cons 						= require("consolidate");
 const session 					= require("express-session");
@@ -12,7 +8,9 @@ const cookieParser 				= require("cookie-parser");
 const passport 					= require("passport");
 const ApiGateway 				= require("moleculer-web");
 
-const renderer = cons["jade"];
+const Auth						= require("./routes/auth");
+
+const renderer 					= cons["jade"];
 
 module.exports = {
 	name: "api",
@@ -31,11 +29,9 @@ module.exports = {
 				saveUninitialized: true
 			}),
 
-			// passport init
+			// Passport init
 			passport.initialize(),
 			passport.session(),
-
-			//common.renderer("jade", "./views"),
 		],
 
 		routes: [
@@ -47,6 +43,14 @@ module.exports = {
 	},
 
 	methods: {
+		/**
+		 * Render a page
+		 * 
+		 * @param {*} req 
+		 * @param {*} res 
+		 * @param {*} file 
+		 * @param {*} opts 
+		 */
 		render(req, res, file, opts) {
 			renderer(path.resolve("./views", file + ".jade"), opts || {}, (err, html) => {
 				if (err) 

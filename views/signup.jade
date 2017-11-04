@@ -2,8 +2,8 @@ extends layout
 
 block content
 
-	h1 Login
-	form(action='/auth/local', method='post')
+	h1 Sign Up
+	form(action='/signup', method='post')
 		p
 			label(for='username') Username:
 			br
@@ -16,14 +16,14 @@ block content
 			input(type='submit')
 		p
 			if providers.indexOf("google") !== -1
-				a(href='/auth/google') Login with Google
+				a(href='/auth/google') Sign up with Google
 				br
 			if providers.indexOf("facebook") !== -1
-				a(href='/auth/facebook') Login with Facebook
+				a(href='/auth/facebook') Sign up with Facebook
 				br
 			if providers.indexOf("github") !== -1
-				a(href='/auth/github') Login with Github
+				a(href='/auth/github') Sign up with Github
 				br
 			if providers.indexOf("twitter") !== -1
-				a(href='/auth/twitter') Login with Twitter
+				a(href='/auth/twitter') Sign up with Twitter
 				br

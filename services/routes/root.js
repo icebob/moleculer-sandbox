@@ -18,11 +18,17 @@ module.exports = {
 		},
 			
 		"GET /login"(req, res) {
-			this.render(req, res, "login");
+			this.render(req, res, "login", { providers: Object.keys(this.passports) });
+		},
+			
+		"GET /signup"(req, res) {
+			this.render(req, res, "signup", { providers: Object.keys(this.passports) });
 		},
 			
 		"GET /logout"(req, res) {
-			req.logout();
+			if (req.user)
+				req.logout();
+
 			this.sendRedirect(res, "/");
 		}
 	},

@@ -1,31 +1,6 @@
 "use strict";
 
-const cons 						= require("consolidate");
-const path 						= require("path");
-
 const { ForbiddenError, UnAuthorizedError } = require("moleculer-web").Errors;
-
-/*
-function renderer(type, folder) {
-	const _render = cons[type];
-	return function render(req, res, next) {
-		res.render = function(file, opts) {
-			_render(path.resolve(folder, file), opts || {}, (err, html) => {
-				if (err) 
-					return req.$service.sendError(req, res, err);
-				
-				res.writeHead(200, {
-					"Content-type": "text/html"
-				});
-				res.end(html);
-
-				req.$service.logResponse(req, res);
-			});
-		};
-
-		next();
-	};
-}*/
 
 /**
  * Check the request is come from an authenticated user
@@ -33,9 +8,8 @@ function renderer(type, folder) {
 function isAuthenticated(req, res, next) {
 	if (req.isAuthenticated())
 		return next();
-	else {
-		return req.$service.sendError(req, res, new UnAuthorizedError());
-	}
+
+	return req.$service.sendError(req, res, new UnAuthorizedError());
 }
 
 /**
@@ -48,9 +22,9 @@ function hasRole(roleRequired) {
 	return function(req, res, next) {
 		return module.exports.isAuthenticated(req, res, () => {
 			if (req.user && req.user.roles && req.user.roles.indexOf(roleRequired) !== -1)
-				next();
-			else
-				return req.$service.sendError(req, res, new ForbiddenError());
+				return next();
+
+			return req.$service.sendError(req, res, new ForbiddenError());
 		});
 	};
 }
@@ -63,7 +37,6 @@ function hasAdminRole() {
 }
 
 module.exports = {
-	//renderer,
 	isAuthenticated,
 	hasRole,
 	hasAdminRole
