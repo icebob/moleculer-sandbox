@@ -1,10 +1,18 @@
 "use strict";
 
-const { MoleculerError } 	= require("moleculer").Errors;
-const Auth					= require("./routes/auth");
+const { MoleculerError } 		= require("moleculer").Errors;
+const Auth						= require("./routes/auth");
+const common					= require("./routes/common");
 
-const ApiGateway 			= require("moleculer-web");
-const { ForbiddenError, UnAuthorizedError, ERR_NO_TOKEN, ERR_INVALID_TOKEN } = ApiGateway.Errors;
+const path 						= require("path");
+const cons 						= require("consolidate");
+const session 					= require("express-session");
+const cookieParser 				= require("cookie-parser");
+
+const passport 					= require("passport");
+const ApiGateway 				= require("moleculer-web");
+
+const renderer = cons["jade"];
 
 module.exports = {
 	name: "api",
@@ -12,61 +20,48 @@ module.exports = {
 	settings: {
 		port: process.env.PORT || 4000,
 
-		routes: [
-			Auth.route,
-			require("./routes/api"),
-			require("./routes/admin"),
-			require("./routes/root"),
+		use: [
+			// parse cookie from header
+			cookieParser(),
+
+			// initialize session
+			session({
+				secret: "moleculer-sandbox",
+				resave: false,
+				saveUninitialized: true
+			}),
+
+			// passport init
+			passport.initialize(),
+			passport.session(),
+
+			//common.renderer("jade", "./views"),
 		],
 
-		/*assets: {
-			folder: "./www"
-		}*/
+		routes: [
+			Auth.route,
+			require("./routes/admin"),
+			require("./routes/api"),
+			require("./routes/root"),
+		]
 	},
 
 	methods: {
-		/**
-		 * Authorize the request
-		 * 
-		 * @param {Context} ctx 
-		 * @param {Object} route
-		 * @param {IncomingRequest} req 
-		 * @returns {Promise}
-		 */
-		authorize(ctx, route, req) {
-			let authValue = req.headers["authorization"];
-			if (authValue && authValue.startsWith("Bearer ")) {
-				let token = authValue.slice(7);
+		render(req, res, file, opts) {
+			renderer(path.resolve("./views", file + ".jade"), opts || {}, (err, html) => {
+				if (err) 
+					return this.sendError(req, res, err);
+				
+				res.writeHead(200, {
+					"Content-type": "text/html"
+				});
+				res.end(html);
 
-				// Verify JWT token
-				return ctx.call("auth.verifyToken", { token })
-					.then(decoded => {
-						//console.log("decoded data", decoded);
-
-						// Check the user role
-						if (route.opts.roles.indexOf(decoded.role) === -1)
-							return this.Promise.reject(new ForbiddenError());
-
-						// If authorization was success, set the user entity to ctx.meta
-						return ctx.call("users.get", { id: decoded.id }).then(user => {
-							ctx.meta.user = user;
-							this.logger.info("Logged in user", user);
-						});
-					})
-
-					.catch(err => {
-						if (err instanceof MoleculerError)
-							return this.Promise.reject(err);
-
-						return this.Promise.reject(new UnAuthorizedError(ERR_INVALID_TOKEN));
-					});
-
-			} else
-				return this.Promise.reject(new UnAuthorizedError(ERR_NO_TOKEN));
+				this.logResponse(req, res);
+			});
 		}
-
 	},
-	
+
 	created() {
 		Auth.initialize.call(this);
 	}

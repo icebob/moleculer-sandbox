@@ -13,7 +13,7 @@ module.exports = {
 	adapter: new DbService.MemoryAdapter({ filename: path.resolve("data", "users.db") }),
 
 	settings: {
-		fields: ["_id", "username", "fullName", "email", "avatar", "author"]
+		fields: ["_id", "username", "fullName", "email", "avatar", "roles"]
 	},
 
 	actions: {
@@ -32,12 +32,12 @@ module.exports = {
 						if (!user)
 							return Promise.reject(new MoleculerClientError("User is not exist!", 400, "USER_NOT_FOUND"));
 
-						return bcrypt.compare(ctx.params.password, user.password).then(function(res) {
+						return bcrypt.compare(ctx.params.password, user.password).then(res => {
 							if (!res)
 								return Promise.reject(new MoleculerClientError("Wrong password!", 400, "WRONG_PASSWORD"));
 							
-							// TODO: transform
-							return user;							
+							// Transform user entity (remove password and all protected fields)
+							return this.transformDocuments(ctx, {}, user);
 						});
 					});
 			}
@@ -55,6 +55,8 @@ module.exports = {
 					password: bcrypt.hashSync("admin1234", 10),
 					fullName: "Administrator",
 					email: "admin@sandbox.moleculer.services",
+					avatar: "http://romaniarising.com/wp-content/uploads/2014/02/avatar-admin-robot-150x150.jpg",
+					roles: ["admin", "user"],
 					createdAt: new Date()
 				}))
 				// Create test user
@@ -63,6 +65,8 @@ module.exports = {
 					password: bcrypt.hashSync("test1234", 10),
 					fullName: "Test user",
 					email: "test@sandbox.moleculer.services",
+					avatar: "http://icons.iconarchive.com/icons/iconshock/real-vista-general/256/administrator-icon.png",
+					roles: ["user"],
 					createdAt: new Date()
 				}))
 
@@ -75,6 +79,7 @@ module.exports = {
 							fullName: fakeUser.firstName + " " + fakeUser.lastName,
 							email: fakeUser.email,
 							avatar: fakeUser.avatar,
+							roles: ["user"],
 							createdAt: new Date(),
 							updatedAt: null
 						});

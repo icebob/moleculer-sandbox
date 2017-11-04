@@ -1,7 +1,6 @@
 "use strict";
 
 const { MoleculerClientError } 	= require("moleculer").Errors;
-const common					= require("./common");
 
 const passport 					= require("passport");
 const LocalStrategy 			= require("passport-local").Strategy;
@@ -212,7 +211,7 @@ function socialLogin(req, res) {
 		// Successful authentication, redirect home.
 		this.logger.info("Successful authentication");
 		this.logger.info("User", req.user);
-		this.sendRedirect(res, "/main", 302);
+		this.sendRedirect(res, "/", 302);
 	});
 }
 
@@ -229,14 +228,14 @@ function socialLoginCallback(req, res) {
 	//const pp = Passports[provider];
 	this.logger.info(`Social login callback for '${provider}' is fired.`);
 
-	passport.authenticate(provider, { failureRedirect: "/login" })(req, res, (err) => {
+	passport.authenticate(provider, {})(req, res, (err) => {
 		if (err)
 			return this.sendError(req, res, err);
 
 		// Successful authentication, redirect home.
 		this.logger.info("Successful authentication");
 		this.logger.info("User", req.user);
-		this.sendRedirect(res, "/main", 302);
+		this.sendRedirect(res, "/", 302);
 	});
 }
 
@@ -247,10 +246,6 @@ const Auth = {
 
 		whitelist: [
 			"auth.login"
-		],
-
-		use: [
-			...common.middlewares
 		],
 
 		aliases: {

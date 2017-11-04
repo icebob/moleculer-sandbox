@@ -1,0 +1,25 @@
+extends layout
+
+block content
+
+	h1 Login
+	form(action='/auth/local', method='post')
+		p
+			label(for='username') Username:
+			br
+			input(name='username')
+		p
+			label(for='username') Password:
+			br
+			input(type='password', name='password')
+		p
+			input(type='submit')
+		p
+			a(href='/auth/google') Login with Google
+			br
+			a(href='/auth/facebook') Login with Facebook
+			br
+			a(href='/auth/github') Login with Github
+			br
+			a(href='/auth/twitter') Login with Twitter
+			br
