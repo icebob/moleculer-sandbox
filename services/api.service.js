@@ -4,13 +4,14 @@ const path 						= require("path");
 const cons 						= require("consolidate");
 const session 					= require("express-session");
 const cookieParser 				= require("cookie-parser");
+const helmet 					= require("helmet");
 
 const passport 					= require("passport");
 const ApiGateway 				= require("moleculer-web");
 
 const Auth						= require("./routes/auth");
 
-const renderer 					= cons["jade"];
+const renderer 					= cons["pug"];
 
 module.exports = {
 	name: "api",
@@ -19,6 +20,9 @@ module.exports = {
 		port: process.env.PORT || 4000,
 
 		use: [
+			// Security
+			helmet(),
+
 			// parse cookie from header
 			cookieParser(),
 
@@ -52,7 +56,7 @@ module.exports = {
 		 * @param {*} opts 
 		 */
 		render(req, res, file, opts) {
-			renderer(path.resolve("./views", file + ".jade"), opts || {}, (err, html) => {
+			renderer(path.resolve("./views", file + ".pug"), opts || {}, (err, html) => {
 				if (err) 
 					return this.sendError(req, res, err);
 				
