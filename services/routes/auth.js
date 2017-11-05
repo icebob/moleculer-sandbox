@@ -244,12 +244,8 @@ const Auth = {
 	route: {
 		path: "/auth",
 
-		whitelist: [
-			"auth.login"
-		],
-
 		aliases: {
-			"/:provider": socialLogin,
+			"POST /:provider": socialLogin,
 			"GET /:provider/callback": socialLoginCallback,
 		},
 

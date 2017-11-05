@@ -1,10 +1,47 @@
 extends layout
 
 block content
-	img(src="images/logo.png")
+	.hero.is-fullheight(style="background-color: #F0F3F2;")
+		.hero-head
+			nav.navbar.is-transparent(style="min-height: 80px")
+				.container
+					.navbar-brand
+						a.navbar-item(href="#")
+							img(src="http://moleculer.services/logo.svg", style="width: 60px; height: 60px; max-height: 60px;")
 
-	h1 Hello!
+						.navbar-burger
+							span
+							span
+							span
 
-	a(href="/login") Login
-	br
-	a(href="/signup") Sign up
+					.navbar-menu
+						.navbar-start
+							a.navbar-item(href="https://github.com/icebob/moleculer-sandbox", target="_blank")
+								span.icon(style="font-size: 28px")
+									i.fa.fa-github
+
+							a.navbar-item(href="https://twitter.com/MoleculerJS", target="_blank")
+								span.icon(style="font-size: 28px; color: #55acee")
+									i.fa.fa-twitter
+
+						.navbar-end
+							.navbar-item
+								.field.is-grouped
+									p.control
+										a.button.is-primary(href="/login") Login
+									p.control
+										a.button.is-link(href="/signup") Sign up
+
+		.hero-body
+			.container.has-text-centered
+				figure
+					img(src="images/logo.png")
+
+				h1.title Moleculer Sandbox
+
+				.field.is-grouped.is-centered
+					.control
+						a.button.is-primary.is-medium(href="/login") Login
+					.control
+						a.button.is-link.is-medium(href="/signup") Sign up
+													

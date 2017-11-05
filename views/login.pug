@@ -1,29 +1,45 @@
 extends layout
 
 block content
+	.section
+		.container
 
-	h1 Login
-	form(action='/auth/local', method='post')
-		p
-			label(for='username') Username:
-			br
-			input(name='username')
-		p
-			label(for='username') Password:
-			br
-			input(type='password', name='password')
-		p
-			input(type='submit')
-		p
-			if providers.indexOf("google") !== -1
-				a(href='/auth/google') Login with Google
-				br
-			if providers.indexOf("facebook") !== -1
-				a(href='/auth/facebook') Login with Facebook
-				br
-			if providers.indexOf("github") !== -1
-				a(href='/auth/github') Login with Github
-				br
-			if providers.indexOf("twitter") !== -1
-				a(href='/auth/twitter') Login with Twitter
-				br
+			h1.title Login
+			form(action='/auth/local', method='post')
+				.field
+					label.label(for='username') Username:
+					input.input(id='username', name='username')
+
+				.field
+					label.label(for='password') Password:
+					input.input(type='password', id='password', name='password')
+
+				.field
+					button.button.is-primary(type='submit') Login
+
+				.field.is-grouped
+					if providers.indexOf("google") !== -1
+						.control
+							a.button.is-secondary(href='/auth/google') 
+								span.icon
+									i.fa.fa-google
+								span Login with Google
+					if providers.indexOf("facebook") !== -1
+						.control
+							a.button.is-secondary(href='/auth/facebook')
+								span.icon
+									i.fa.fa-facebook
+								span Login with Facebook
+					if providers.indexOf("github") !== -1
+						.control
+							a.button.is-secondary(href='/auth/github')
+								span.icon
+									i.fa.fa-github
+								span Login with Github
+					if providers.indexOf("twitter") !== -1
+						.control
+							a.button.is-secondary(href='/auth/twitter')
+								span.icon
+									i.fa.fa-twitter
+								span Login with Twitter
+				
