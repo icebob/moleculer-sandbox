@@ -57,7 +57,7 @@ module.exports = {
 					email: "admin@sandbox.moleculer.services",
 					avatar: "http://romaniarising.com/wp-content/uploads/2014/02/avatar-admin-robot-150x150.jpg",
 					roles: ["admin", "user"],
-					createdAt: new Date()
+					createdAt: Date.now()
 				}))
 				// Create test user
 				.then(() => this.adapter.insert({
@@ -67,11 +67,11 @@ module.exports = {
 					email: "test@sandbox.moleculer.services",
 					avatar: "http://icons.iconarchive.com/icons/iconshock/real-vista-general/256/administrator-icon.png",
 					roles: ["user"],
-					createdAt: new Date()
+					createdAt: Date.now()
 				}))
 
 				// Create fake users
-				.then(() => Promise.all(_.times(8, () => {
+				/*.then(() => Promise.all(_.times(8, () => {
 					return this.broker.call("fake.user").then(fakeUser => {
 						return this.adapter.insert({
 							username: fakeUser.userName,
@@ -80,11 +80,11 @@ module.exports = {
 							email: fakeUser.email,
 							avatar: fakeUser.avatar,
 							roles: ["user"],
-							createdAt: new Date(),
+							createdAt: Date.now(),
 							updatedAt: null
 						});
 					});
-				})))
+				})))*/
 				.then(() => {
 					this.adapter.count().then(count => this.logger.info(`Generated ${count} users!`));
 				});

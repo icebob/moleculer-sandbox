@@ -2,7 +2,7 @@ extends layout
 
 block content
 	.section
-		.container
+		.container(style="max-width: 600px")
 
 			h1.title Login
 			form(action='/auth/local', method='post')
@@ -17,6 +17,7 @@ block content
 				.field
 					button.button.is-primary(type='submit') Login
 
+				hr
 				.field.is-grouped
 					if providers.indexOf("google") !== -1
 						.control
@@ -43,3 +44,6 @@ block content
 									i.fa.fa-twitter
 								span Login with Twitter
 				
+				hr
+				p Don't have an account? 
+					a(href="/signup") Sign up!

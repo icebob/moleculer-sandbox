@@ -36,6 +36,7 @@
     "moleculer": "0.11.5",
     "moleculer-db": "0.6.0",
     "moleculer-fake": "1.0.8",
+    "moleculer-mail": "1.0.8",
     "moleculer-repl": "0.3.1",
     "moleculer-web": "0.6.0-beta1",
     "passport": "0.4.0",

@@ -2,28 +2,37 @@ extends layout
 
 block content
 	.section
-		.container
+		.container(style="max-width: 600px")
+			h1.title Sign up
+			form(action='/signup', method='post')
+				.field
+					label.label(for='fullName') Name:
+					input.input(id='fullName', name='fullName', class=hasValidationError('fullName') ? "is-danger" : "")
+					if hasValidationError('fullName')
+						p.help.is-danger= validationErrorMessage('fullName')
 
-			h1.title Sign Up
-			form(action='/auth/local', method='post')
 				.field
 					label.label(for='email') E-mail:
-					input.input(id='email')
+					input.input(id='email', name='email', class=hasValidationError('email') ? "is-danger" : "")
+					if hasValidationError('email')
+						p.help.is-danger= validationErrorMessage('email')
 
 				.field
 					label.label(for='username') Username:
-					input.input(id='username')
+					input.input(id='username', name='username', class=hasValidationError('username') ? "is-danger" : "")
+					if hasValidationError('username')
+						p.help.is-danger= validationErrorMessage('username')
 
 				.field
 					label.label(for='password') Password:
-					input.input(type='password', id='password')
-
-				.field
-					label.label(for='password2') Confirm password:
-					input.input(type='password', id='password2')
+					input.input(type='password', id='password', name='password', class=hasValidationError('password') ? "is-danger" : "")
+					if hasValidationError('password')
+						p.help.is-danger= validationErrorMessage('password')
 
 				.field
 					button.button.is-primary(type='submit') Sign up
+
+				hr
 
 				.field.is-grouped
 					if providers.indexOf("google") !== -1
@@ -50,4 +59,6 @@ block content
 								span.icon
 									i.fa.fa-twitter
 								span Sign up with Twitter
-				
+				hr
+				p Already have an account? 
+					a(href="/login") Sign in!				

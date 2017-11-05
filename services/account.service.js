@@ -1,5 +1,15 @@
 "use strict";
 
+const bcrypt = require("bcrypt");
+const { MoleculerError } = require("moleculer").Errors;
+
+/**
+ * 
+ * https://github.com/layerhq/express-jwt-blacklist
+ * https://github.com/rlindskog/vueniverse/blob/master/template/src/server/middleware/authenticate.js
+ * 
+ */
+
 module.exports = {
 	name: "account",
 
@@ -8,12 +18,32 @@ module.exports = {
 		 * Register a new account
 		 */
 		register: {
+			params: {
+				username: { type: "string", min: 3 },
+				password: { type: "string", min: 6 },
+				email: { type: "email" },
+				fullName: { type: "string", min: 2 },
+			},
 			handler(ctx) {
-				// 1. Generate verification token
-				// 2. Generate passwordless token
-				// 3. Create user
-				// 4. Send Welcome email
-				// 4. Send verification email
+				return this.Promise.resolve()
+					// 1. Generate verification token
+					// 2. Generate passwordless token
+
+					.then(() => bcrypt.hash(ctx.params.password, 10))
+					// 3. Create user
+					.then(hashPassword => {
+						return ctx.call("users.create", {
+							username: ctx.params.username,	
+							password: hashPassword,	
+							fullName: ctx.params.fullName,	
+							email: ctx.params.email,	
+							roles: ["user"]	,
+							createdAt: Date.now(),	
+						});
+
+					});
+					// 4. Send Welcome email
+					// 4. Send verification email
 			}
 		},
 

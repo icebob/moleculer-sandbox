@@ -18,20 +18,63 @@ module.exports = {
 		},
 			
 		"GET /login"(req, res) {
+			if (req.isAuthenticated())
+				return this.sendRedirect(res, "/");
+
 			this.render(req, res, "login", { providers: Object.keys(this.passports) });
 		},
 			
 		"GET /signup"(req, res) {
-			this.render(req, res, "signup", { providers: Object.keys(this.passports) });
+			if (req.isAuthenticated())
+				return this.sendRedirect(res, "/");
+
+			this.render(req, res, "signup", { 
+				providers: Object.keys(this.passports),
+				hasValidationError() { return false; },
+				validationErrorMessage() { return ""; }
+			});
+		},
+
+		"POST /signup"(req, res) {
+			this.broker.call("account.register", req.body)
+				.then(user => {
+					this.sendRedirect(res, "/");
+				})
+				.catch(err => {
+					if (err.name == "ValidationError") {
+						this.render(req, res, "signup", { 
+							providers: Object.keys(this.passports),
+							hasValidationError(field) {
+								if (err.data && Array.isArray(err.data))
+									return err.data.find(item => item.field == field);
+							},
+							validationErrorMessage(field) {
+								if (err.data && Array.isArray(err.data)) {
+									const item = err.data.find(item => item.field == field);
+									if (item)
+										return item.message;
+								}
+							}
+						});
+					}
+				});
 		},
 			
 		"GET /logout"(req, res) {
-			if (req.user)
+			if (req.user) {
 				req.logout();
+				req.session.destroy();
+			}
 
 			this.sendRedirect(res, "/");
 		}
 	},
 
-	disableServiceCalls: true
+	mappingPolicy: "restrict",
+
+	// Use bodyparser modules
+	bodyParsers: {
+		json: true,
+		urlencoded: { extended: true }
+	}
 };
