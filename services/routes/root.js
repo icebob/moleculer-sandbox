@@ -93,6 +93,13 @@ module.exports = {
 			} else {
 				this.sendRedirect(res, "/login");
 			}
+		},
+
+		"GET /test/hello"(req, res) {
+			res.writeHead(200, {
+				"Content-type": "text/plain"
+			});
+			res.end("Hello");
 		}
 	},
 

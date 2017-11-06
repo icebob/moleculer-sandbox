@@ -102,21 +102,10 @@ function socialLogin(req, res) {
 	const provider = req.$params.provider;
 	const pp = this.passports[provider];
 
-	if (!pp) {
+	if (!pp)
 		return this.sendError(req, res, new MoleculerClientError(`Invalid social auth provider '${provider}'`));
-	}
 
-	passport.authenticate(provider, pp.authOptions)(req, res, err => {
-		if (err) {
-			req.flash("error", err.message);
-			return this.sendRedirect(res, "/login");
-		}
-
-		// Successful authentication, redirect home.
-		this.logger.info("Successful authentication");
-		this.logger.info("User", req.user);
-		this.sendRedirect(res, "/", 302);
-	});
+	passport.authenticate(provider, pp.authOptions)(req, res, err => handleLoginCallback.call(this, req, res, provider, err));
 }
 
 /**
@@ -129,22 +118,32 @@ function socialLogin(req, res) {
  */	
 function socialLoginCallback(req, res) {
 	const provider = req.$params.provider;
+	passport.authenticate(provider, {})(req, res, err => handleLoginCallback.call(this, req, res, provider, err));
+}
 
-	passport.authenticate(provider, {})(req, res, (err) => {
-		if (err) {
-			req.flash("error", err.message);
-			if (req.user)
-				// Linking error
-				return this.sendRedirect(res, "/");
-			else
-				return this.sendRedirect(res, "/login");
-		}
+/**
+ * Handle passport auth callback
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} provider 
+ * @param {*} err 
+ */
+function handleLoginCallback(req, res, provider, err) {
+	if (err) {
+		req.flash("error", err.message);
+		if (req.user)
+			// Linking error
+			return this.sendRedirect(res, "/");
+		else
+			return this.sendRedirect(res, "/login");
+	}
 
-		// Successful authentication, redirect home.
-		this.logger.info("Successful authentication");
-		this.logger.info("User", req.user);
-		this.sendRedirect(res, "/", 302);
-	});
+	// TODO check status
+	
+	// Successful authentication, redirect home.
+	this.logger.info(`Successful authentication with '${provider}'.`);
+	this.logger.info("User", req.user);
+	this.sendRedirect(res, "/", 302);
 }
 
 
@@ -190,9 +189,7 @@ const Auth = {
 			}
 		});
 
-		passport.serializeUser((user, done) => {
-			return done(null, user._id);
-		});
+		passport.serializeUser((user, done) => done(null, user._id));
 
 		passport.deserializeUser((id, done) => {
 			this.broker.call("users.get", { id })

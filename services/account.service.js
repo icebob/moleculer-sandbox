@@ -16,24 +16,35 @@ module.exports = {
 	settings: {
 		enableSignUp: true,
 		enablePasswordless: true,
-		sendMails: true,
-		needVerification: true,
+		useUsername: true,
+		sendMail: true,
+		verification: true,
 		socialProviders: {},
+
+		actions: {
+			createUser: "users.create",
+			getUser: "users.get",
+			updateUser: "users.update",
+			findUsers: "users.find"
+		}
 	},
 
 	actions: {
 		/**
-		 * Register a new account
+		 * Register a new user account
 		 */
 		register: {
 			params: {
-				username: { type: "string", min: 3 },
+				username: { type: "string", min: 3, optional: true },
 				password: { type: "string", min: 6 },
 				email: { type: "email" },
 				fullName: { type: "string", min: 2 },
 				avatar: { type: "string", optional: true },
 			},
 			handler(ctx) {
+				if (!this.settings.enableSignUp)
+					return this.Promise.reject(new MoleculerClientError("Sign up is not available.", 400, "ERR_SIGNUP_DISABLED"));
+
 				return this.Promise.resolve()
 					// Verify email
 					.then(() => {
@@ -48,7 +59,7 @@ module.exports = {
 						return this.getUserByUsername(ctx, ctx.params.username)
 							.then(user => {
 								if (user)
-									return this.Promise.reject(new MoleculerClientError("Username has already registered.", 400, "ERR_USERNAME_EXISTS"));
+									return this.Promise.reject(new MoleculerClientError("Username has already been registered.", 400, "ERR_USERNAME_EXISTS"));
 							});
 					})					
 					// 1. Generate verification token
@@ -211,7 +222,6 @@ module.exports = {
 							.then(users => {
 								if (users.length > 0) {
 									// User found.
-									// TODO: check user status and deleted
 									return this.Promise.resolve(users[0]);
 								} else {
 									// Try to search user by email
@@ -224,6 +234,9 @@ module.exports = {
 									return user;
 								}
 
+								if (!this.settings.enableSignUp)
+									return this.Promise.reject(new MoleculerClientError("Sign up is not available", 400, "ERR_SIGNUP_DISABLED"));
+
 								// Create a new user and link 
 								return ctx.call("account.register", {
 									username: userData.username,
@@ -235,8 +248,6 @@ module.exports = {
 							})
 							.then(user => ctx.call("account.link", { user, provider, userData }));
 					}
-
-
 
 				} else
 					return this.Promise.reject(new MoleculerClientError(`Unsupported provider: ${provider}`, 400, "ERR_UNSUPPORTED_PROVIDER"));
@@ -267,6 +278,12 @@ module.exports = {
 				.then(users => users.length > 0 ? users[0] : null);
 		},
 
+		/**
+		 * Get 'user' entity from social profile
+		 * 
+		 * @param {*} provider 
+		 * @param {*} profile 
+		 */
 		getUserDataFromSocialProfile(provider, profile) {
 			switch(provider) {
 				case "google": return this.getUserDataFromGoogleProfile(profile);
