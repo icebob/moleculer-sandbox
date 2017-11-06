@@ -38,7 +38,12 @@ module.exports = {
 		"POST /signup"(req, res) {
 			this.broker.call("account.register", req.body)
 				.then(user => {
-					this.sendRedirect(res, "/");
+					req.login(user, err => {
+						if (err)
+							this.sendError(req, res, err);
+
+						this.sendRedirect(res, "/");
+					});
 				})
 				.catch(err => {
 					if (err.name == "ValidationError") {

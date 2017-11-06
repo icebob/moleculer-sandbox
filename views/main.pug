@@ -3,5 +3,52 @@ extends layout
 block content
 	h1 Hello #{user.fullName}!
 	pre=JSON.stringify(user, null, 2)
-	a(href='/logout', rel='button')
-		| Logout
+	
+	p 
+		a.button.is-primary(href="/logout") Logout
+	hr
+	.field.is-grouped
+			.control
+				if user.socialLinks["google"]
+					a.button.is-secondary(href='/unlink/google') 
+						span.icon
+							i.fa.fa-google
+						span Unlink from Google account
+				else 
+					a.button.is-secondary(href='/auth/google') 
+						span.icon
+							i.fa.fa-google
+						span Link to Google account
+			.control
+				if user.socialLinks["facebook"]
+					a.button.is-secondary(href='/unlink/facebook')
+						span.icon
+							i.fa.fa-facebook
+						span UnLink from Facebook account
+				else 
+					a.button.is-secondary(href='/auth/facebook')
+						span.icon
+							i.fa.fa-facebook
+						span Link to Facebook account
+			.control
+				if user.socialLinks["github"]
+					a.button.is-secondary(href='/unlink/github')
+						span.icon
+							i.fa.fa-github
+						span Unlink from Github account
+				else
+					a.button.is-secondary(href='/auth/github')
+						span.icon
+							i.fa.fa-github
+						span Link to Github account
+			.control
+				if user.socialLinks["twitter"]
+					a.button.is-secondary(href='/unlink/twitter')
+						span.icon
+							i.fa.fa-twitter
+						span Unlink from Twitter account
+				else
+					a.button.is-secondary(href='/auth/twitter')
+						span.icon
+							i.fa.fa-twitter
+						span Link to Twitter account

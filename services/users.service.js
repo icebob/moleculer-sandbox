@@ -13,7 +13,7 @@ module.exports = {
 	adapter: new DbService.MemoryAdapter({ filename: path.resolve("data", "users.db") }),
 
 	settings: {
-		fields: ["_id", "username", "fullName", "email", "avatar", "roles"]
+		fields: ["_id", "username", "fullName", "email", "avatar", "roles", "socialLinks"]
 	},
 
 	actions: {
@@ -57,6 +57,7 @@ module.exports = {
 					email: "admin@sandbox.moleculer.services",
 					avatar: "http://romaniarising.com/wp-content/uploads/2014/02/avatar-admin-robot-150x150.jpg",
 					roles: ["admin", "user"],
+					socialLinks: {},
 					createdAt: Date.now()
 				}))
 				// Create test user
@@ -67,6 +68,7 @@ module.exports = {
 					email: "test@sandbox.moleculer.services",
 					avatar: "http://icons.iconarchive.com/icons/iconshock/real-vista-general/256/administrator-icon.png",
 					roles: ["user"],
+					socialLinks: {},
 					createdAt: Date.now()
 				}))
 

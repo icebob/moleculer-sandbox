@@ -1,7 +1,7 @@
 "use strict";
 
 const bcrypt = require("bcrypt");
-const { MoleculerError } = require("moleculer").Errors;
+const { MoleculerError, MoleculerClientError, MoleculerServerError } = require("moleculer").Errors;
 
 /**
  * 
@@ -23,6 +23,7 @@ module.exports = {
 				password: { type: "string", min: 6 },
 				email: { type: "email" },
 				fullName: { type: "string", min: 2 },
+				avatar: { type: "string", optional: true },
 			},
 			handler(ctx) {
 				return this.Promise.resolve()
@@ -36,8 +37,10 @@ module.exports = {
 							username: ctx.params.username,	
 							password: hashPassword,	
 							fullName: ctx.params.fullName,	
-							email: ctx.params.email,	
-							roles: ["user"]	,
+							email: ctx.params.email,
+							roles: ["user"],
+							avatar: ctx.params.avatar,
+							socialLinks: {},	
 							createdAt: Date.now(),	
 						});
 
@@ -107,8 +110,16 @@ module.exports = {
 		 * Link account to a social account
 		 */
 		link: {
+			params: {
+				user: { type: "object" },
+				provider: { type: "string" },
+				userData: { type: "object" },
+			},
 			handler(ctx) {
-				
+				return ctx.call("users.update", {
+					id: ctx.params.user._id,
+					[`socialLinks.${ctx.params.provider}`]: ctx.params.userData.id
+				});
 			}
 		},
 
@@ -117,8 +128,180 @@ module.exports = {
 		 */
 		unlink: {
 			handler(ctx) {
-
+				return ctx.call("users.update", {
+					id: ctx.params.user._id,
+					[`socialLinks.${ctx.params.provider}`]: null
+				});
 			}
+		},
+
+		/**
+		 * Handle social login.
+		 */
+		socialLogin: {
+			params: {
+				provider: { type: "string" },
+				profile: { type: "object" },
+				accessToken: { type: "string" },
+				refreshToken: { type: "string", optional: true },
+			},
+			handler(ctx) {
+				const provider = ctx.params.provider;
+				const userData = this.getUserDataFromSocialProfile(provider, ctx.params.profile);
+
+				if (userData) {
+					const query = { [`socialLinks.${provider}`]: userData.id };
+
+					if (ctx.meta.user) {
+						// There is logged in user. Link to the logged in user
+						return this.Promise.resolve()
+							// Get user 							
+							.then(() => ctx.call("users.find", { query }))
+							.then(users => {
+								if (users.length > 0) {
+									const user = users[0];
+									if (user._id != ctx.meta.user._id) 
+										return this.Promise.reject(new MoleculerClientError("This social account has been linked to other user account.", 400, "SOCIAL_ACCOUNT_MISMATCH"));
+								
+									// Same user
+									return this.Promise.resolve(user);
+
+								} else {
+									// Not found linked account. Create the link
+									return ctx.call("account.link", { user: ctx.meta.user, provider, userData });
+								}
+								
+							});
+
+					} else {
+						// No logged in user
+						if (!userData.email)
+							return this.Promise.reject(new MoleculerClientError("Missing e-mail address in social profile", 400, "NO_SOCIAL_EMAIL"));
+
+						return this.Promise.resolve()
+							.then(() => ctx.call("users.find", { query }))
+							.then(users => {
+								if (users.length > 0) {
+									// User found.
+									// TODO: check user status and deleted
+									return this.Promise.resolve(users[0]);
+								}
+							})
+							.then(() => ctx.call("users.find", { query: { email: userData.email }}))
+							.then(users => {
+								if (users.length > 0) {
+									// Found the user by email. Update the profile & create link
+									return users[0];
+								}
+
+								// Create a new user and link 
+								return ctx.call("account.register", {
+									username: userData.username,
+									password: bcrypt.genSaltSync(),
+									email: userData.email,
+									fullName: userData.name,
+									avatar: userData.avatar
+								});
+							})
+							.then(user => ctx.call("account.link", { user, provider, userData }));
+					}
+
+
+
+				} else
+					return this.Promise.reject(new MoleculerClientError(`Unsupported provider: ${provider}`, 400, "UNSUPPORTED_PROVIDER"));
+			}
+		}
+	},
+
+	methods: {
+		getUserDataFromSocialProfile(provider, profile) {
+			switch(provider) {
+				case "google": return this.getUserDataFromGoogleProfile(profile);
+				case "facebook": return this.getUserDataFromFacebookProfile(profile);
+				case "github": return this.getUserDataFromGithubProfile(profile);
+				case "twitter": return this.getUserDataFromTwitterProfile(profile);
+			}
+
+			return null;
+		},
+
+		/**
+		 * Get 'user' entity fields from Google social profile
+		 * 
+		 * @param {*} profile 
+		 */
+		getUserDataFromGoogleProfile(profile) {
+			const res = {
+				id: profile.id,
+				name: profile.displayName,
+			};
+			if (profile.emails && profile.emails.length > 0) {
+				res.email = profile.emails[0].value;
+				res.username = res.email;
+			}
+
+			if (profile.photos && profile.photos.length > 0)
+				res.avatar = profile.photos[0].value.replace("sz=50", "sz=200");
+
+			return res;
+		},
+
+		/**
+		 * Get 'user' entity fields from Facebook social profile
+		 * 
+		 * @param {*} profile 
+		 */
+		getUserDataFromFacebookProfile(profile) {
+			const res = {
+				id: profile.id,
+				username: profile._json.email,
+				name: profile.name.givenName + " " + profile.name.familyName,
+				email: profile._json.email,
+				avatar: `https://graph.facebook.com/${profile.id}/picture?type=large`
+			};
+			return res;
+		},
+
+		/**
+		 * Get 'user' entity fields from Github social profile
+		 * 
+		 * @param {*} profile 
+		 */
+		getUserDataFromGithubProfile(profile) {
+			const res = {
+				id: profile.id,
+				username: profile.username,
+				name: profile.displayName,
+				avatar: profile._json.avatar_url
+			};
+
+			if (profile.emails && profile.emails.length > 0) {
+				let email = profile.emails.find(email => email.primary);
+				if (!email) 
+					email = profile.emails[0];
+				
+				res.email = email.value;
+			}
+
+			return res;
+		},
+
+		/**
+		 * Get 'user' entity fields from Twitter social profile
+		 * 
+		 * @param {*} profile 
+		 */
+		getUserDataFromTwitterProfile(profile) {
+			const res = {
+				id: profile.id,
+				username: profile.username,
+				name: profile.displayName,
+				email: `${profile.username}@twitter.com`,
+				avatar: profile._json.profile_image_url_https
+			};
+
+			return res;
 		},
 	}
 };

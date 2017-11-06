@@ -43,25 +43,15 @@ const Passports = {
 		}, 
 		verify(req, accessToken, refreshToken, profile, done) {
 			this.logger.info("Received profile: ", profile);
-			/*
-			helper.linkToSocialAccount({
-				req, 
-				accessToken,
-				refreshToken,
-				profile,
-				done,
 
-				provider: "google",
-				email: profile.emails[0].value,
-				userData: {
-					name: profile.displayName,
-					gender: profile.gender,
-					picture: profile.photos && profile.photos.length > 0 ? profile.photos[0].value.replace("sz=50", "sz=200") : null,
-					location: null
-				}
-			});
-			*/
-			return done(null, { profile });
+			return this.broker.call("account.socialLogin", {
+				provider: profile.provider,
+				profile,
+				accessToken,
+				refreshToken
+			}, { meta: { user: req.user }})
+				.then(user => done(null, user))
+				.catch(done);
 		}
 	},
 	
@@ -82,6 +72,15 @@ const Passports = {
 		verify(req, accessToken, refreshToken, profile, done) {
 			this.logger.info("Received profile: ", profile);
 			
+			return this.broker.call("account.socialLogin", {
+				provider: profile.provider,
+				profile,
+				accessToken,
+				refreshToken
+			}, { meta: { user: req.user }})
+				.then(user => done(null, user))
+				.catch(done);
+			
 			/*helper.linkToSocialAccount({
 				req, 
 				accessToken,
@@ -97,9 +96,9 @@ const Passports = {
 					picture: `https://graph.facebook.com/${profile.id}/picture?type=large`,
 					location: (profile._json.location) ? profile._json.location.name : null
 				}
-			});*/
+			});
 
-			return done(null, { profile });
+			return done(null, { profile });*/
 
 		}
 	},
@@ -120,6 +119,16 @@ const Passports = {
 		},
 		verify(req, accessToken, refreshToken, profile, done) {
 			this.logger.info("Received profile: ", profile);
+
+			return this.broker.call("account.socialLogin", {
+				provider: profile.provider,
+				profile,
+				accessToken,
+				refreshToken
+			}, { meta: { user: req.user }})
+				.then(user => done(null, user))
+				.catch(done);
+			
 			/*
 			let email;
 			if (profile.emails && profile.emails.length > 0) {
@@ -143,8 +152,8 @@ const Passports = {
 					picture: profile._json.avatar_url,
 					location: profile._json.location
 				}
-			});*/
-			done(null, { profile });
+			});
+			done(null, { profile });*/
 		}
 	},
 
@@ -161,6 +170,15 @@ const Passports = {
 		},
 		verify(req, accessToken, refreshToken, profile, done) {
 			this.logger.info("Received profile: ", profile);
+
+			return this.broker.call("account.socialLogin", {
+				provider: profile.provider,
+				profile,
+				accessToken,
+				refreshToken
+			}, { meta: { user: req.user }})
+				.then(user => done(null, user))
+				.catch(done);
 
 			/*
 			helper.linkToSocialAccount({
@@ -180,8 +198,8 @@ const Passports = {
 					location: profile._json.location
 				}
 			});
-			*/
-			done(null, { profile });
+			
+			done(null, { profile });*/
 		}
 	}
 };
@@ -245,7 +263,7 @@ const Auth = {
 		path: "/auth",
 
 		aliases: {
-			"POST /:provider": socialLogin,
+			"/:provider": socialLogin,
 			"GET /:provider/callback": socialLoginCallback,
 		},
 
