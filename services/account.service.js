@@ -13,6 +13,14 @@ const { MoleculerError, MoleculerClientError, MoleculerServerError } = require("
 module.exports = {
 	name: "account",
 
+	settings: {
+		enableSignUp: true,
+		enablePasswordless: true,
+		sendMails: true,
+		needVerification: true,
+		socialProviders: {},
+	},
+
 	actions: {
 		/**
 		 * Register a new account
@@ -32,7 +40,7 @@ module.exports = {
 						return this.getUserByEmail(ctx, ctx.params.email)
 							.then(user => {
 								if (user)
-									return this.Promise.reject(new MoleculerClientError("Email has already been registered.", 400, "EMAIL_EXISTS"));
+									return this.Promise.reject(new MoleculerClientError("Email has already been registered.", 400, "ERR_EMAIL_EXISTS"));
 							});
 					})					
 					// Verify username
@@ -40,7 +48,7 @@ module.exports = {
 						return this.getUserByUsername(ctx, ctx.params.username)
 							.then(user => {
 								if (user)
-									return this.Promise.reject(new MoleculerClientError("Username has already registered.", 400, "USERNAME_EXISTS"));
+									return this.Promise.reject(new MoleculerClientError("Username has already registered.", 400, "ERR_USERNAME_EXISTS"));
 							});
 					})					
 					// 1. Generate verification token
@@ -181,7 +189,7 @@ module.exports = {
 								if (users.length > 0) {
 									const user = users[0];
 									if (user._id != ctx.meta.user._id) 
-										return this.Promise.reject(new MoleculerClientError("This social account has been linked to an other account.", 400, "SOCIAL_ACCOUNT_MISMATCH"));
+										return this.Promise.reject(new MoleculerClientError("This social account has been linked to an other account.", 400, "ERR_SOCIAL_ACCOUNT_MISMATCH"));
 								
 									// Same user
 									return this.Promise.resolve(user);
@@ -196,7 +204,7 @@ module.exports = {
 					} else {
 						// No logged in user
 						if (!userData.email)
-							return this.Promise.reject(new MoleculerClientError("Missing e-mail address in social profile", 400, "NO_SOCIAL_EMAIL"));
+							return this.Promise.reject(new MoleculerClientError("Missing e-mail address in social profile", 400, "ERR_NO_SOCIAL_EMAIL"));
 
 						return this.Promise.resolve()
 							.then(() => ctx.call("users.find", { query }))
@@ -231,7 +239,7 @@ module.exports = {
 
 
 				} else
-					return this.Promise.reject(new MoleculerClientError(`Unsupported provider: ${provider}`, 400, "UNSUPPORTED_PROVIDER"));
+					return this.Promise.reject(new MoleculerClientError(`Unsupported provider: ${provider}`, 400, "ERR_UNSUPPORTED_PROVIDER"));
 			}
 		}
 	},
