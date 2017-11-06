@@ -2,12 +2,33 @@ extends layout
 
 block content
 	h1 Hello #{user.fullName}!
+
+	if messages && messages.error && messages.error.length > 0
+		.field
+			.message.is-danger 
+				each error in messages.error
+					.message-body
+						span.icon
+							i.fa.fa-warning
+						span=  error
+
+	if messages && messages.info && messages.info.length > 0
+		.field
+			.message.is-success 
+				each info in messages.info
+					.message-body
+						span.icon
+							i.fa.fa-check
+						span=  info
+
 	pre=JSON.stringify(user, null, 2)
 	
 	p 
 		a.button.is-primary(href="/logout") Logout
 	hr
+
 	.field.is-grouped
+		if socialProviders.indexOf("google") !== -1
 			.control
 				if user.socialLinks["google"]
 					a.button.is-secondary(href='/unlink/google') 
@@ -19,6 +40,8 @@ block content
 						span.icon
 							i.fa.fa-google
 						span Link to Google account
+
+		if socialProviders.indexOf("facebook") !== -1
 			.control
 				if user.socialLinks["facebook"]
 					a.button.is-secondary(href='/unlink/facebook')
@@ -30,6 +53,8 @@ block content
 						span.icon
 							i.fa.fa-facebook
 						span Link to Facebook account
+
+		if socialProviders.indexOf("github") !== -1
 			.control
 				if user.socialLinks["github"]
 					a.button.is-secondary(href='/unlink/github')
@@ -41,6 +66,8 @@ block content
 						span.icon
 							i.fa.fa-github
 						span Link to Github account
+
+		if socialProviders.indexOf("twitter") !== -1
 			.control
 				if user.socialLinks["twitter"]
 					a.button.is-secondary(href='/unlink/twitter')

@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "bcrypt": "1.0.3",
+    "connect-flash": "0.1.1",
     "consolidate": "0.14.5",
     "cookie-parser": "1.4.3",
     "dotenv": "4.0.0",

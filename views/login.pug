@@ -6,6 +6,15 @@ block content
 
 			h1.title Login
 			form(action='/auth/local', method='post')
+				if messages && messages.error && messages.error.length > 0
+					.field
+						.message.is-danger 
+							each error in messages.error
+								.message-body
+									span.icon
+										i.fa.fa-warning
+									span=  error								
+
 				.field
 					label.label(for='username') Username:
 					input.input(id='username', name='username')
@@ -15,29 +24,29 @@ block content
 					input.input(type='password', id='password', name='password')
 
 				.field
-					button.button.is-primary(type='submit') Login
+					button.button.is-primary(type='submit', onclick="this.classList.add('is-loading');") Login
 
 				hr
 				.field.is-grouped
-					if providers.indexOf("google") !== -1
+					if socialProviders.indexOf("google") !== -1
 						.control
 							a.button.is-secondary(href='/auth/google') 
 								span.icon
 									i.fa.fa-google
 								span Login with Google
-					if providers.indexOf("facebook") !== -1
+					if socialProviders.indexOf("facebook") !== -1
 						.control
 							a.button.is-secondary(href='/auth/facebook')
 								span.icon
 									i.fa.fa-facebook
 								span Login with Facebook
-					if providers.indexOf("github") !== -1
+					if socialProviders.indexOf("github") !== -1
 						.control
 							a.button.is-secondary(href='/auth/github')
 								span.icon
 									i.fa.fa-github
 								span Login with Github
-					if providers.indexOf("twitter") !== -1
+					if socialProviders.indexOf("twitter") !== -1
 						.control
 							a.button.is-secondary(href='/auth/twitter')
 								span.icon

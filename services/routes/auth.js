@@ -40,18 +40,6 @@ const Passports = {
 			clientSecret: process.env.GOOGLE_CLIENT_SECRET,
 			callbackURL: "/auth/google/callback",
 			passReqToCallback: true
-		}, 
-		verify(req, accessToken, refreshToken, profile, done) {
-			this.logger.info("Received profile: ", profile);
-
-			return this.broker.call("account.socialLogin", {
-				provider: profile.provider,
-				profile,
-				accessToken,
-				refreshToken
-			}, { meta: { user: req.user }})
-				.then(user => done(null, user))
-				.catch(done);
 		}
 	},
 	
@@ -68,38 +56,6 @@ const Passports = {
 			callbackURL: "/auth/facebook/callback",
 			profileFields: ["name", "email", "link", "locale", "timezone"],
 			passReqToCallback: true
-		},
-		verify(req, accessToken, refreshToken, profile, done) {
-			this.logger.info("Received profile: ", profile);
-			
-			return this.broker.call("account.socialLogin", {
-				provider: profile.provider,
-				profile,
-				accessToken,
-				refreshToken
-			}, { meta: { user: req.user }})
-				.then(user => done(null, user))
-				.catch(done);
-			
-			/*helper.linkToSocialAccount({
-				req, 
-				accessToken,
-				refreshToken,
-				profile,
-				done,
-
-				provider: "facebook",
-				email: profile._json.email,
-				userData: {
-					name: profile.name.givenName + " " + profile.name.familyName,
-					gender: profile._json.gender,
-					picture: `https://graph.facebook.com/${profile.id}/picture?type=large`,
-					location: (profile._json.location) ? profile._json.location.name : null
-				}
-			});
-
-			return done(null, { profile });*/
-
 		}
 	},
 
@@ -116,44 +72,6 @@ const Passports = {
 			callbackURL: "/auth/github/callback",
 			scope: [ "user:email" ],
 			passReqToCallback: true
-		},
-		verify(req, accessToken, refreshToken, profile, done) {
-			this.logger.info("Received profile: ", profile);
-
-			return this.broker.call("account.socialLogin", {
-				provider: profile.provider,
-				profile,
-				accessToken,
-				refreshToken
-			}, { meta: { user: req.user }})
-				.then(user => done(null, user))
-				.catch(done);
-			
-			/*
-			let email;
-			if (profile.emails && profile.emails.length > 0) {
-				email = profile.emails.find((email) => { return email.primary; });
-				if (!email) email = profile.emails[0];
-			}
-
-			helper.linkToSocialAccount({
-				req, 
-				accessToken,
-				refreshToken,
-				profile,
-				done,
-
-				provider: "github",
-				username: profile.username,
-				email: email ? email.value : null,
-				userData: {
-					name: profile.displayName,
-					gender: null,
-					picture: profile._json.avatar_url,
-					location: profile._json.location
-				}
-			});
-			done(null, { profile });*/
 		}
 	},
 
@@ -167,39 +85,6 @@ const Passports = {
 			consumerSecret: process.env.TWITTER_CLIENT_SECRET,
 			callbackURL: "/auth/twitter/callback",
 			passReqToCallback: true
-		},
-		verify(req, accessToken, refreshToken, profile, done) {
-			this.logger.info("Received profile: ", profile);
-
-			return this.broker.call("account.socialLogin", {
-				provider: profile.provider,
-				profile,
-				accessToken,
-				refreshToken
-			}, { meta: { user: req.user }})
-				.then(user => done(null, user))
-				.catch(done);
-
-			/*
-			helper.linkToSocialAccount({
-				req, 
-				accessToken,
-				refreshToken,
-				profile,
-				done,
-
-				provider: "twitter",
-				email: `${profile.username}@twitter.com`,
-				username: profile.username,
-				userData: {
-					name: profile.displayName,
-					gender: null,
-					picture: profile._json.profile_image_url_https,
-					location: profile._json.location
-				}
-			});
-			
-			done(null, { profile });*/
 		}
 	}
 };
@@ -221,10 +106,11 @@ function socialLogin(req, res) {
 		return this.sendError(req, res, new MoleculerClientError(`Invalid social auth provider '${provider}'`));
 	}
 
-	this.logger.info(`Social login with '${provider}'...`);
 	passport.authenticate(provider, pp.authOptions)(req, res, err => {
-		if (err)
-			return this.sendError(req, res, err);
+		if (err) {
+			req.flash("error", err.message);
+			return this.sendRedirect(res, "/login");
+		}
 
 		// Successful authentication, redirect home.
 		this.logger.info("Successful authentication");
@@ -240,15 +126,19 @@ function socialLogin(req, res) {
  * @param {any} req 
  * @param {any} res 
  * @param {any} params 
- */
+ */	
 function socialLoginCallback(req, res) {
 	const provider = req.$params.provider;
-	//const pp = Passports[provider];
-	this.logger.info(`Social login callback for '${provider}' is fired.`);
 
 	passport.authenticate(provider, {})(req, res, (err) => {
-		if (err)
-			return this.sendError(req, res, err);
+		if (err) {
+			req.flash("error", err.message);
+			if (req.user)
+				// Linking error
+				return this.sendRedirect(res, "/");
+			else
+				return this.sendRedirect(res, "/login");
+		}
 
 		// Successful authentication, redirect home.
 		this.logger.info("Successful authentication");
@@ -282,24 +172,32 @@ const Auth = {
 			
 			if (pp.enabled) {
 				this.logger.info("Register Passport provider:", provider);
-				passport.use(new pp.strategy(pp.strategyOptions, pp.verify.bind(this)));
+				const verify = pp.verify || function verify(req, accessToken, refreshToken, profile, done) {
+					this.logger.info(`Received '${profile.provider}' profile: `, profile);
+
+					return this.broker.call("account.socialLogin", {
+						provider: profile.provider,
+						profile,
+						accessToken,
+						refreshToken
+					}, { meta: { user: req.user }})
+						.then(user => done(null, user))
+						.catch(done);
+				};
+				passport.use(new pp.strategy(pp.strategyOptions, verify.bind(this)));
 
 				this.passports[provider] = pp;
 			}
 		});
 
 		passport.serializeUser((user, done) => {
-			this.logger.info("Serializer user:", user);
-			return done(null, user._id ||user.profile.id);
+			return done(null, user._id);
 		});
 
 		passport.deserializeUser((id, done) => {
-			this.logger.info("Deserializer user ID:", id);
 			this.broker.call("users.get", { id })
-				.then(user => {
-					done(null, user);
-				})
-				.catch(err => done(err));
+				.then(user => done(null, user))
+				.catch(done);
 		});
 
 	}

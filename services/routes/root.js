@@ -6,7 +6,11 @@ module.exports = {
 	path: "/",
 
 	use: [
-		serveStatic("./www")
+		serveStatic("./www"),
+		function(req, res, next) {
+			res.locals.socialProviders = Object.keys(this.passports);
+			next();
+		}
 	],
 
 	aliases: {
@@ -21,7 +25,7 @@ module.exports = {
 			if (req.isAuthenticated())
 				return this.sendRedirect(res, "/");
 
-			this.render(req, res, "login", { providers: Object.keys(this.passports) });
+			this.render(req, res, "login");
 		},
 			
 		"GET /signup"(req, res) {
@@ -29,7 +33,6 @@ module.exports = {
 				return this.sendRedirect(res, "/");
 
 			this.render(req, res, "signup", { 
-				providers: Object.keys(this.passports),
 				hasValidationError() { return false; },
 				validationErrorMessage() { return ""; }
 			});
@@ -48,7 +51,6 @@ module.exports = {
 				.catch(err => {
 					if (err.name == "ValidationError") {
 						this.render(req, res, "signup", { 
-							providers: Object.keys(this.passports),
 							hasValidationError(field) {
 								if (err.data && Array.isArray(err.data))
 									return err.data.find(item => item.field == field);
@@ -61,6 +63,9 @@ module.exports = {
 								}
 							}
 						});
+					} else {
+						req.flash("error", err.message);
+						return this.sendRedirect(res, "/signup");
 					}
 				});
 		},
@@ -72,6 +77,22 @@ module.exports = {
 			}
 
 			this.sendRedirect(res, "/");
+		},
+
+		"GET /unlink/:provider"(req, res) {
+			if (req.user) {
+				this.broker.call("account.unlink", { user: req.user, provider: req.$params.provider })
+					.then(() => {
+						req.flash("info", "Account unlinked.");
+						this.sendRedirect(res, "/");
+					})
+					.catch(err => {
+						req.flash("error", err.message);
+						this.sendRedirect(res, "/");
+					});
+			} else {
+				this.sendRedirect(res, "/login");
+			}
 		}
 	},
 

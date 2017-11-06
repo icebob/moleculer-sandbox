@@ -5,6 +5,16 @@ block content
 		.container(style="max-width: 600px")
 			h1.title Sign up
 			form(action='/signup', method='post')
+				if messages && messages.error && messages.error.length > 0
+					.field
+						.message.is-danger 
+							each error in messages.error
+								.message-body
+									span.icon
+										i.fa.fa-warning
+									span=  error								
+
+
 				.field
 					label.label(for='fullName') Name:
 					input.input(id='fullName', name='fullName', class=hasValidationError('fullName') ? "is-danger" : "")
@@ -30,30 +40,30 @@ block content
 						p.help.is-danger= validationErrorMessage('password')
 
 				.field
-					button.button.is-primary(type='submit') Sign up
+					button.button.is-primary(type='submit', onclick="this.classList.add('is-loading');") Sign up
 
 				hr
 
 				.field.is-grouped
-					if providers.indexOf("google") !== -1
+					if socialProviders.indexOf("google") !== -1
 						.control
 							a.button.is-secondary(href='/auth/google') 
 								span.icon
 									i.fa.fa-google
 								span Sign up with Google
-					if providers.indexOf("facebook") !== -1
+					if socialProviders.indexOf("facebook") !== -1
 						.control
 							a.button.is-secondary(href='/auth/facebook')
 								span.icon
 									i.fa.fa-facebook
 								span Sign up with Facebook
-					if providers.indexOf("github") !== -1
+					if socialProviders.indexOf("github") !== -1
 						.control
 							a.button.is-secondary(href='/auth/github')
 								span.icon
 									i.fa.fa-github
 								span Sign up with Github
-					if providers.indexOf("twitter") !== -1
+					if socialProviders.indexOf("twitter") !== -1
 						.control
 							a.button.is-secondary(href='/auth/twitter')
 								span.icon

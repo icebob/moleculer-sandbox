@@ -27,6 +27,22 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.Promise.resolve()
+					// Verify email
+					.then(() => {
+						return this.getUserByEmail(ctx, ctx.params.email)
+							.then(user => {
+								if (user)
+									return this.Promise.reject(new MoleculerClientError("Email has already been registered.", 400, "EMAIL_EXISTS"));
+							});
+					})					
+					// Verify username
+					.then(() => {
+						return this.getUserByUsername(ctx, ctx.params.username)
+							.then(user => {
+								if (user)
+									return this.Promise.reject(new MoleculerClientError("Username has already registered.", 400, "USERNAME_EXISTS"));
+							});
+					})					
 					// 1. Generate verification token
 					// 2. Generate passwordless token
 
@@ -127,6 +143,10 @@ module.exports = {
 		 * Unlink account from a social account
 		 */
 		unlink: {
+			params: {
+				user: { type: "object" },
+				provider: { type: "string" }
+			},
 			handler(ctx) {
 				return ctx.call("users.update", {
 					id: ctx.params.user._id,
@@ -161,7 +181,7 @@ module.exports = {
 								if (users.length > 0) {
 									const user = users[0];
 									if (user._id != ctx.meta.user._id) 
-										return this.Promise.reject(new MoleculerClientError("This social account has been linked to other user account.", 400, "SOCIAL_ACCOUNT_MISMATCH"));
+										return this.Promise.reject(new MoleculerClientError("This social account has been linked to an other account.", 400, "SOCIAL_ACCOUNT_MISMATCH"));
 								
 									// Same user
 									return this.Promise.resolve(user);
@@ -185,13 +205,15 @@ module.exports = {
 									// User found.
 									// TODO: check user status and deleted
 									return this.Promise.resolve(users[0]);
+								} else {
+									// Try to search user by email
+									return this.getUserByEmail(ctx, userData.email);
 								}
 							})
-							.then(() => ctx.call("users.find", { query: { email: userData.email }}))
-							.then(users => {
-								if (users.length > 0) {
+							.then(user => {
+								if (user) {
 									// Found the user by email. Update the profile & create link
-									return users[0];
+									return user;
 								}
 
 								// Create a new user and link 
@@ -215,6 +237,28 @@ module.exports = {
 	},
 
 	methods: {
+		/**
+		 * Get user by email
+		 * 
+		 * @param {Context} ctx 
+		 * @param {String} email 
+		 */
+		getUserByEmail(ctx, email) {
+			return ctx.call("users.find", { query: { email }})
+				.then(users => users.length > 0 ? users[0] : null);
+		},
+			
+		/**
+		 * Get user by username
+		 * 
+		 * @param {Context} ctx 
+		 * @param {String} username 
+		 */
+		getUserByUsername(ctx, username) {
+			return ctx.call("users.find", { query: { username }})
+				.then(users => users.length > 0 ? users[0] : null);
+		},
+
 		getUserDataFromSocialProfile(provider, profile) {
 			switch(provider) {
 				case "google": return this.getUserDataFromGoogleProfile(profile);

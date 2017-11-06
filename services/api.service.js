@@ -5,6 +5,7 @@ const cons 						= require("consolidate");
 const session 					= require("express-session");
 const cookieParser 				= require("cookie-parser");
 const helmet 					= require("helmet");
+const flash 					= require("connect-flash");
 
 const passport 					= require("passport");
 const ApiGateway 				= require("moleculer-web");
@@ -36,6 +37,8 @@ module.exports = {
 			// Passport init
 			passport.initialize(),
 			passport.session(),
+
+			flash()
 		],
 
 		routes: [
@@ -53,10 +56,12 @@ module.exports = {
 		 * @param {*} req 
 		 * @param {*} res 
 		 * @param {*} file 
-		 * @param {*} opts 
+		 * @param {*} options 
 		 */
-		render(req, res, file, opts) {
-			renderer(path.resolve("./views", file + ".pug"), opts || {}, (err, html) => {
+		render(req, res, file, options) {
+			res.locals.messages = req.flash();
+			let opts = Object.assign({}, res.locals, options || {});
+			renderer(path.resolve("./views", file + ".pug"), opts, (err, html) => {
 				if (err) 
 					return this.sendError(req, res, err);
 				
