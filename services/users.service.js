@@ -13,7 +13,7 @@ module.exports = {
 	adapter: new DbService.MemoryAdapter({ filename: path.resolve("data", "users.db") }),
 
 	settings: {
-		fields: ["_id", "username", "fullName", "email", "avatar", "roles", "socialLinks"]
+		fields: ["_id", "username", "fullName", "email", "avatar", "roles", "socialLinks", "status", "verified"]
 	},
 
 	actions: {
@@ -26,7 +26,7 @@ module.exports = {
 				password: "string"
 			},
 			handler(ctx) {
-				return Promise.resolve()
+				return this.Promise.resolve()
 					.then(() => this.adapter.db.findOne({ username: ctx.params.username }))
 					.then(user => {
 						if (!user)
@@ -41,13 +41,40 @@ module.exports = {
 						});
 					});
 			}
+		},
+
+		/**
+		 * Verify a user by token
+		 */
+		verify: {
+			params: {
+				token: "string"				
+			},
+			handler(ctx) {
+				return this.Promise.resolve()
+					.then(() => this.adapter.db.findOne({ verificationToken: ctx.params.token }))
+					.then(user => {
+						if (!user)
+							return Promise.reject(new MoleculerClientError("Invalid verification token or expired!", 400, "INVALID_TOKEN"));
+
+						return this.updateById(ctx, {
+							id: user._id,
+							update: {
+								"$set": {
+									verified: true,
+									verificationToken: null
+								}
+							}
+						});
+					});
+			}
 		}
 	},
 
 	methods: {
 		seedDB() {
 			this.logger.info("Seed Users DB...");
-			return Promise.resolve()
+			return this.Promise.resolve()
 				
 				// Create admin user
 				.then(() => this.adapter.insert({
@@ -58,7 +85,9 @@ module.exports = {
 					avatar: "http://romaniarising.com/wp-content/uploads/2014/02/avatar-admin-robot-150x150.jpg",
 					roles: ["admin", "user"],
 					socialLinks: {},
-					createdAt: Date.now()
+					createdAt: Date.now(),
+					status: 1,
+					verified: true
 				}))
 				// Create test user
 				.then(() => this.adapter.insert({
@@ -69,7 +98,9 @@ module.exports = {
 					avatar: "http://icons.iconarchive.com/icons/iconshock/real-vista-general/256/administrator-icon.png",
 					roles: ["user"],
 					socialLinks: {},
-					createdAt: Date.now()
+					createdAt: Date.now(),
+					status: 1,
+					verified: true
 				}))
 
 				// Create fake users

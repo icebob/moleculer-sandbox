@@ -41,12 +41,18 @@ module.exports = {
 		"POST /signup"(req, res) {
 			this.broker.call("account.register", req.body)
 				.then(user => {
-					req.login(user, err => {
-						if (err)
-							this.sendError(req, res, err);
+					if (user.verified) {
+						// No verification. Auto-login
+						req.login(user, err => {
+							if (err)
+								this.sendError(req, res, err);
 
-						this.sendRedirect(res, "/");
-					});
+							this.sendRedirect(res, "/");
+						});
+					} else {
+						req.flash("info", "Please check your email to activate your account. Thanks for signing up!");
+						return this.sendRedirect(res, "/signup");						
+					}
 				})
 				.catch(err => {
 					if (err.name == "ValidationError") {
@@ -95,12 +101,24 @@ module.exports = {
 			}
 		},
 
-		"GET /test/hello"(req, res) {
-			res.writeHead(200, {
-				"Content-type": "text/plain"
-			});
-			res.end("Hello");
-		}
+		"GET /verify/:token"(req, res) {
+			if (req.user)
+				return this.sendRedirect(res, "/");
+
+			this.broker.call("account.verify", { token: req.$params.token })
+				.then(user => {
+					req.login(user, err => {
+						if (err)
+							this.sendError(req, res, err);
+
+						this.sendRedirect(res, "/");
+					});
+				})
+				.catch(err => {
+					req.flash("error", err.message);
+					this.sendRedirect(res, "/");
+				});
+		},
 	},
 
 	mappingPolicy: "restrict",

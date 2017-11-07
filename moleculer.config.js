@@ -15,7 +15,7 @@ module.exports = {
 	nodeID: null,
 
 	logger: true,
-	logLevel: "info",
+	logLevel: "debug",
 	logFormatter: "default",
 
 	//transporter: "NATS",

@@ -1,12 +1,10 @@
 "use strict";
 
-const bcrypt = require("bcrypt");
+const crypto 		= require("crypto");
+const bcrypt 		= require("bcrypt");
 const { MoleculerError, MoleculerClientError, MoleculerServerError } = require("moleculer").Errors;
 
 /**
- * 
- * https://github.com/layerhq/express-jwt-blacklist
- * https://github.com/rlindskog/vueniverse/blob/master/template/src/server/middleware/authenticate.js
  * 
  */
 
@@ -15,17 +13,18 @@ module.exports = {
 
 	settings: {
 		enableSignUp: true,
-		enablePasswordless: true,
-		useUsername: true,
-		sendMail: true,
-		verification: true,
+		enablePasswordless: true, // TODO
+		enableUsername: true, // TODO
+		sendMail: true, // TODO
+		verification: true, // TODO
 		socialProviders: {},
 
 		actions: {
 			createUser: "users.create",
-			getUser: "users.get",
-			updateUser: "users.update",
-			findUsers: "users.find"
+			getUser: "users.get", // TODO
+			updateUser: "users.update", // TODO
+			findUsers: "users.find", // TODO
+			sendMail: "mail.send"
 		}
 	},
 
@@ -36,7 +35,7 @@ module.exports = {
 		register: {
 			params: {
 				username: { type: "string", min: 3, optional: true },
-				password: { type: "string", min: 6 },
+				password: { type: "string", min: 6, optional: true },
 				email: { type: "email" },
 				fullName: { type: "string", min: 2 },
 				avatar: { type: "string", optional: true },
@@ -45,43 +44,98 @@ module.exports = {
 				if (!this.settings.enableSignUp)
 					return this.Promise.reject(new MoleculerClientError("Sign up is not available.", 400, "ERR_SIGNUP_DISABLED"));
 
+				const params = Object.assign({}, ctx.params);
+				const entity = {};
+
 				return this.Promise.resolve()
 					// Verify email
 					.then(() => {
-						return this.getUserByEmail(ctx, ctx.params.email)
-							.then(user => {
-								if (user)
+						return this.getUserByEmail(ctx, params.email)
+							.then(found => {
+								if (found)
 									return this.Promise.reject(new MoleculerClientError("Email has already been registered.", 400, "ERR_EMAIL_EXISTS"));
 							});
 					})					
 					// Verify username
 					.then(() => {
-						return this.getUserByUsername(ctx, ctx.params.username)
-							.then(user => {
-								if (user)
-									return this.Promise.reject(new MoleculerClientError("Username has already been registered.", 400, "ERR_USERNAME_EXISTS"));
-							});
-					})					
-					// 1. Generate verification token
-					// 2. Generate passwordless token
+						if (this.settings.enableUsername) {
+							return this.getUserByUsername(ctx, params.username)
+								.then(found => {
+									if (found)
+										return this.Promise.reject(new MoleculerClientError("Username has already been registered.", 400, "ERR_USERNAME_EXISTS"));
+								});
+						}
+					})		
+									
+					// Set basic data
+					.then(() => {
+						if (this.settings.enableUsername)
+							entity.username = params.username;
+						entity.email = params.email;
+						entity.fullName = params.fullName;	
+						entity.roles = ["user"];
+						entity.avatar = params.avatar;
+						entity.socialLinks = {};	
+						entity.createdAt = Date.now();	
+						entity.verified = true;
+						entity.status = 1;
+					})
 
-					.then(() => bcrypt.hash(ctx.params.password, 10))
-					// 3. Create user
-					.then(hashPassword => {
-						return ctx.call("users.create", {
-							username: ctx.params.username,	
-							password: hashPassword,	
-							fullName: ctx.params.fullName,	
-							email: ctx.params.email,
-							roles: ["user"],
-							avatar: ctx.params.avatar,
-							socialLinks: {},	
-							createdAt: Date.now(),	
-						});
+					// Generate passwordless token or hash password
+					.then(() => {
+						if (params.password) {
+							entity.password = bcrypt.hash(params.password, 10);
+							entity.passwordless = false;
+						} else if (this.settings.enablePasswordless) {
+							entity.passwordless = true;
+							entity.password = this.generateToken(25);
+						} else {
+							return this.Promise.reject(new MoleculerClientError("Passwordless account is not allowed.", 400, "ERR_PASSWORDLESS_NOT_ALLOWED"));
+						}
+					})
 
+					// Generate verification token
+					.then(() => {
+						if (this.settings.verification) {
+							entity.verified = false;
+							entity.verificationToken = this.generateToken(25);
+						}
+					})
+
+					// Create new user
+					.then(() => {
+						return ctx.call(this.settings.actions.createUser, entity);
+					})
+
+					// Send welcome or verification email
+					.then(user => {
+						return Promise.resolve()
+							.then(() => {
+								if (user.verified) {
+									// Send welcome email
+									ctx.call(this.settings.actions.sendMail, {
+										to: user.email,
+										template: "welcome",
+										data: {
+											name: user.fullName
+										}
+									}, { retry: 3 });
+
+								} else {
+									// Send verification email
+									ctx.call(this.settings.actions.sendMail, {
+										to: user.email,
+										template: "activate",
+										data: {
+											name: user.fullName,
+											token: entity.verificationToken
+										}
+									}, { retry: 3 });
+
+								}						
+							})
+							.then(() => user);
 					});
-					// 4. Send Welcome email
-					// 4. Send verification email
 			}
 		},
 
@@ -90,10 +144,22 @@ module.exports = {
 		 */
 		verify: {
 			handler(ctx) {
-				// 1. Check verification token
-				// 2. Set `verified: true`
-				// 3. Login with user
-				// 4. Send welcome email
+				return this.Promise.resolve()
+					// Check verification token
+					.then(() => ctx.call("users.verify", { token: ctx.params.token }))
+
+					// Send welcome email
+					.then(user => {
+						ctx.call(this.settings.actions.sendMail, {
+							to: user.email,
+							template: "welcome",
+							data: {
+								name: user.fullName
+							}
+						}, { retry: 3 });	
+
+						return user;					
+					});
 			}
 		},
 
@@ -372,5 +438,9 @@ module.exports = {
 
 			return res;
 		},
+
+		generateToken(len) {
+			return crypto.randomBytes(len).toString("hex");
+		}
 	}
 };

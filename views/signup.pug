@@ -14,6 +14,14 @@ block content
 										i.fa.fa-warning
 									span=  error								
 
+				if messages && messages.info && messages.info.length > 0
+					.field
+						.message.is-success 
+							each info in messages.info
+								.message-body
+									span.icon
+										i.fa.fa-check
+									span=  info
 
 				.field
 					label.label(for='fullName') Name:
