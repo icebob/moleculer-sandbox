@@ -23,12 +23,13 @@ block content
 										i.fa.fa-check
 									span=  info
 				.field
-					label.label(for='username') Username:
-					input.input(id='username', name='username')
+					label.label(for='email') Username or e-mail:
+					input.input(id='email', name='email')
 
 				.field
 					label.label(for='password') Password:
 					input.input(type='password', id='password', name='password')
+					.help If the password is empty, we will send an e-mail with a magic link (passwordless login)
 
 				.field
 					button.button.is-primary(type='submit', onclick="this.classList.add('is-loading');") Login

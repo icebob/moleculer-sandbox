@@ -27,7 +27,7 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.Promise.resolve()
-					.then(() => this.adapter.db.findOne({ _id: ctx.params.id }))
+					.then(() => this.findOne({ _id: ctx.params.id }))
 					.then(user => {
 						if (!user)
 							return Promise.reject(new MoleculerClientError("User is not exist!", 400, "ERR_USER_NOT_FOUND"));
@@ -52,7 +52,7 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.Promise.resolve()
-					.then(() => this.adapter.db.findOne({ verificationToken: ctx.params.token }))
+					.then(() => this.findOne({ verificationToken: ctx.params.token }))
 					.then(user => {
 						if (!user)
 							return Promise.reject(new MoleculerClientError("Invalid verification token or expired!", 400, "INVALID_TOKEN"));
@@ -76,7 +76,7 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.Promise.resolve()
-					.then(() => this.adapter.db.findOne({ passwordlessToken: ctx.params.token }))
+					.then(() => this.findOne({ passwordlessToken: ctx.params.token }))
 					.then(user => {
 						if (!user)
 							return Promise.reject(new MoleculerClientError("Invalid token!", 400, "INVALID_TOKEN"));
@@ -84,7 +84,7 @@ module.exports = {
 						if (user.passwordlessTokenExpires < Date.now())
 							return Promise.reject(new MoleculerClientError("Token expired!", 400, "TOKEN_EXPIRED"));
 
-						return user;
+						return this.transformDocuments(ctx, {}, user);
 					});
 			}
 		},
@@ -95,7 +95,7 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.Promise.resolve()
-					.then(() => this.adapter.db.findOne({ resetToken: ctx.params.token }))
+					.then(() => this.findOne({ resetToken: ctx.params.token }))
 					.then(user => {
 						if (!user)
 							return Promise.reject(new MoleculerClientError("Invalid token!", 400, "INVALID_TOKEN"));
@@ -103,13 +103,21 @@ module.exports = {
 						if (user.resetTokenExpires < Date.now())
 							return Promise.reject(new MoleculerClientError("Token expired!", 400, "TOKEN_EXPIRED"));
 
-						return user;
+						return this.transformDocuments(ctx, {}, user);
 					});
 			}
 		}
 	},
 
 	methods: {
+		findOne(query) {
+			return this.adapter.find({ query })
+				.then(res => {
+					if (res && res.length > 0)
+						return res[0];
+				});
+		},
+
 		seedDB() {
 			this.logger.info("Seed Users DB...");
 			return this.Promise.resolve()

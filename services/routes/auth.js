@@ -19,13 +19,13 @@ const Passports = {
 		enabled: true,
 		strategy: LocalStrategy,
 		strategyOptions: {
-			usernameField: "username",
+			usernameField: "email",
 			passwordField: "password",
 			passReqToCallback : true
 		},
-		verify(req, username, password, done) {
+		verify(req, email, password, done) {
 			// TODO: not working without password (passport-local)
-			this.broker.call("account.login", { username, password })
+			this.broker.call("account.login", { email, password })
 				.then(user => done(null, user))
 				.catch(err => done(err));
 		}

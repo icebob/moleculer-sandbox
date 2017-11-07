@@ -87,7 +87,7 @@ module.exports = {
 							return bcrypt.hash(params.password, 10).then(hash => entity.password = hash);
 						} else if (this.settings.enablePasswordless) {
 							entity.passwordless = true;
-							entity.password = this.generateToken(25);
+							entity.password = this.generateToken();
 						} else {
 							return this.Promise.reject(new MoleculerClientError("Passwordless login is not allowed.", 400, "ERR_PASSWORDLESS_DISABLED"));
 						}
@@ -97,7 +97,7 @@ module.exports = {
 					.then(() => {
 						if (this.settings.verification && !entity.passwordless) {
 							entity.verified = false;
-							entity.verificationToken = this.generateToken(25);
+							entity.verificationToken = this.generateToken();
 						}
 					})
 
@@ -106,7 +106,7 @@ module.exports = {
 						return ctx.call(this.settings.actions.createUser, entity);
 					})
 
-					// Send welcome or verification email
+					// Send email
 					.then(user => {
 						if (user.verified) {
 							// Send welcome email
@@ -164,7 +164,7 @@ module.exports = {
 				email: { type: "email" }
 			},
 			handler(ctx) {
-				const token = this.generateToken(25);
+				const token = this.generateToken();
 
 				return this.getUserByEmail(ctx, ctx.params.email)
 					// Check email is exist
@@ -270,7 +270,6 @@ module.exports = {
 		login: {
 			params: {
 				email: { type: "string", optional: true },
-				username: { type: "string", optional: true },
 				password: { type: "string", optional: true }
 			},
 			handler(ctx) {
@@ -280,7 +279,7 @@ module.exports = {
 					query = {
 						"$or": [
 							{ email: ctx.params.email },
-							{ username: ctx.params.username }
+							{ username: ctx.params.email }
 						]
 					};
 				} else {
@@ -432,7 +431,7 @@ module.exports = {
 		 * @param {Object} user 
 		 */
 		sendMagicLink(ctx, user) {
-			const token = this.generateToken(25);
+			const token = this.generateToken();
 
 			return ctx.call(this.settings.actions.updateUser, {
 				id: user._id,
@@ -587,7 +586,7 @@ module.exports = {
 		 * 
 		 * @param {Number} len Token length
 		 */
-		generateToken(len) {
+		generateToken(len = 25) {
 			return crypto.randomBytes(len).toString("hex");
 		}
 	}

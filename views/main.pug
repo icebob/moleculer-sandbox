@@ -1,81 +1,119 @@
 extends layout
 
 block content
-	h1 Hello #{user.fullName}!
+	.hero.is-info.is-bold
+		.hero-head
+			nav.navbar.is-transparent(style="min-height: 80px")
+				.container
+					.navbar-brand
+						a.navbar-item(href="#")
+							img(src="http://moleculer.services/logo.svg", style="width: 60px; height: 60px; max-height: 60px;")
+							span(style="font-family: Lato; font-weight: 300; font-size: 24px") Moleculer
 
-	if messages && messages.error && messages.error.length > 0
-		.field
-			.message.is-danger 
-				each error in messages.error
-					.message-body
-						span.icon
-							i.fa.fa-warning
-						span=  error
+						.navbar-burger(data-target="navMenu")
+							span
+							span
+							span
 
-	if messages && messages.info && messages.info.length > 0
-		.field
-			.message.is-success 
-				each info in messages.info
-					.message-body
-						span.icon
-							i.fa.fa-check
-						span=  info
+					.navbar-menu#navMenu
+						.navbar-start
+							a.navbar-item(href="https://github.com/icebob/moleculer-sandbox", target="_blank")
+								span.icon(style="font-size: 28px")
+									i.fa.fa-github
 
-	pre=JSON.stringify(user, null, 2)
-	
-	p 
-		a.button.is-primary(href="/logout") Logout
-	hr
+							a.navbar-item(href="https://twitter.com/MoleculerJS", target="_blank")
+								span.icon(style="font-size: 28px;")
+									i.fa.fa-twitter
 
-	.field.is-grouped
-		if socialProviders.indexOf("google") !== -1
-			.control
-				if user.socialLinks["google"]
-					a.button.is-secondary(href='/unlink/google') 
-						span.icon
-							i.fa.fa-google
-						span Unlink from Google account
-				else 
-					a.button.is-secondary(href='/auth/google') 
-						span.icon
-							i.fa.fa-google
-						span Link to Google account
+						.navbar-end
+							.navbar-item
+								.field.is-grouped
+									p.control
+										a.button.is-primary(href="/logout") Logout
 
-		if socialProviders.indexOf("facebook") !== -1
-			.control
-				if user.socialLinks["facebook"]
-					a.button.is-secondary(href='/unlink/facebook')
-						span.icon
-							i.fa.fa-facebook
-						span UnLink from Facebook account
-				else 
-					a.button.is-secondary(href='/auth/facebook')
-						span.icon
-							i.fa.fa-facebook
-						span Link to Facebook account
+		.hero-body
+			.container.has-text-centered
+				//figure
+					img(src="images/logo.png")
 
-		if socialProviders.indexOf("github") !== -1
-			.control
-				if user.socialLinks["github"]
-					a.button.is-secondary(href='/unlink/github')
-						span.icon
-							i.fa.fa-github
-						span Unlink from Github account
-				else
-					a.button.is-secondary(href='/auth/github')
-						span.icon
-							i.fa.fa-github
-						span Link to Github account
+				h1.title(style="font-family: Lato; font-weight: 300; font-size: 3rem") Welcome, #{user.fullName}!
+				h2.subtitle You logged in successfully.
 
-		if socialProviders.indexOf("twitter") !== -1
-			.control
-				if user.socialLinks["twitter"]
-					a.button.is-secondary(href='/unlink/twitter')
-						span.icon
-							i.fa.fa-twitter
-						span Unlink from Twitter account
-				else
-					a.button.is-secondary(href='/auth/twitter')
-						span.icon
-							i.fa.fa-twitter
-						span Link to Twitter account
+				if messages && messages.error && messages.error.length > 0
+					.field
+						.message.is-danger 
+							each error in messages.error
+								.message-body
+									span.icon
+										i.fa.fa-warning
+									span=  error
+
+				if messages && messages.info && messages.info.length > 0
+					.field
+						.message.is-success 
+							each info in messages.info
+								.message-body
+									span.icon
+										i.fa.fa-check
+									span=  info
+
+			.section
+				.message
+					.message-header User object
+					.message-body(style="text-align: left")
+						pre=JSON.stringify(user, null, 2)
+				.container.has-text-centered
+					a.button.is-primary.is-medium(href="/logout") Logout
+					hr
+					.field.is-grouped(style="justify-content: center")
+						if socialProviders.indexOf("google") !== -1
+							.control
+								if user.socialLinks["google"]
+									a.button.is-secondary(href='/unlink/google') 
+										span.icon
+											i.fa.fa-google
+										span Unlink from Google account
+								else 
+									a.button.is-secondary(href='/auth/google') 
+										span.icon
+											i.fa.fa-google
+										span Link to Google account
+
+						if socialProviders.indexOf("facebook") !== -1
+							.control
+								if user.socialLinks["facebook"]
+									a.button.is-secondary(href='/unlink/facebook')
+										span.icon
+											i.fa.fa-facebook
+										span UnLink from Facebook account
+								else 
+									a.button.is-secondary(href='/auth/facebook')
+										span.icon
+											i.fa.fa-facebook
+										span Link to Facebook account
+
+						if socialProviders.indexOf("github") !== -1
+							.control
+								if user.socialLinks["github"]
+									a.button.is-secondary(href='/unlink/github')
+										span.icon
+											i.fa.fa-github
+										span Unlink from Github account
+								else
+									a.button.is-secondary(href='/auth/github')
+										span.icon
+											i.fa.fa-github
+										span Link to Github account
+
+						if socialProviders.indexOf("twitter") !== -1
+							.control
+								if user.socialLinks["twitter"]
+									a.button.is-secondary(href='/unlink/twitter')
+										span.icon
+											i.fa.fa-twitter
+										span Unlink from Twitter account
+								else
+									a.button.is-secondary(href='/auth/twitter')
+										span.icon
+											i.fa.fa-twitter
+										span Link to Twitter account			
