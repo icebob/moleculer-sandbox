@@ -24,6 +24,7 @@ const Passports = {
 			passReqToCallback : true
 		},
 		verify(req, username, password, done) {
+			// TODO: not working without password (passport-local)
 			this.broker.call("account.login", { username, password })
 				.then(user => done(null, user))
 				.catch(err => done(err));
@@ -130,6 +131,11 @@ function socialLoginCallback(req, res) {
  */
 function handleLoginCallback(req, res, provider, err) {
 	if (err) {
+		if (err.type == "MAGIC_LINK_SENT") {
+			// Passwordless login
+			req.flash("info", err.message);
+			return this.sendRedirect(res, "/login");
+		}
 		req.flash("error", err.message);
 		if (req.user)
 			// Linking error
@@ -137,7 +143,7 @@ function handleLoginCallback(req, res, provider, err) {
 		else
 			return this.sendRedirect(res, "/login");
 	}
-
+		
 	// Successful authentication, redirect home.
 	this.logger.info(`Successful authentication with '${provider}'.`);
 	this.logger.info("User", req.user);

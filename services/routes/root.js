@@ -119,9 +119,30 @@ module.exports = {
 					this.sendRedirect(res, "/");
 				});
 		},
+
+		"GET /passwordless/:token"(req, res) {
+			if (req.user)
+				return this.sendRedirect(res, "/");
+
+			this.broker.call("account.passwordless", { token: req.$params.token })
+				.then(user => {
+					req.login(user, err => {
+						if (err)
+							this.sendError(req, res, err);
+
+						this.sendRedirect(res, "/");
+					});
+				})
+				.catch(err => {
+					req.flash("error", err.message);
+					this.sendRedirect(res, "/login");
+				});
+		},
 	},
 
 	mappingPolicy: "restrict",
+
+	// TODO: errorHandler for moleculer-web. Transform error object to a 404.pug rendered page
 
 	// Use bodyparser modules
 	bodyParsers: {

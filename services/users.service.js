@@ -13,28 +13,28 @@ module.exports = {
 	adapter: new DbService.MemoryAdapter({ filename: path.resolve("data", "users.db") }),
 
 	settings: {
-		fields: ["_id", "username", "fullName", "email", "avatar", "roles", "socialLinks", "status", "verified"]
+		fields: ["_id", "username", "fullName", "email", "avatar", "roles", "socialLinks", "status", "verified", "passwordless"]
 	},
 
 	actions: {
 		/**
-		 * Authenticate a user
+		 * Check user password
 		 */
-		authenticate: {
+		checkPassword: {
 			params: {
-				username: "string",
+				id: "any",
 				password: "string"
 			},
 			handler(ctx) {
 				return this.Promise.resolve()
-					.then(() => this.adapter.db.findOne({ username: ctx.params.username }))
+					.then(() => this.adapter.db.findById(ctx.params.id))
 					.then(user => {
 						if (!user)
-							return Promise.reject(new MoleculerClientError("User is not exist!", 400, "USER_NOT_FOUND"));
+							return Promise.reject(new MoleculerClientError("User is not exist!", 400, "ERR_USER_NOT_FOUND"));
 
 						return bcrypt.compare(ctx.params.password, user.password).then(res => {
 							if (!res)
-								return Promise.reject(new MoleculerClientError("Wrong password!", 400, "WRONG_PASSWORD"));
+								return Promise.reject(new MoleculerClientError("Wrong password!", 400, "ERR_WRONG_PASSWORD"));
 							
 							// Transform user entity (remove password and all protected fields)
 							return this.transformDocuments(ctx, {}, user);
@@ -66,6 +66,25 @@ module.exports = {
 								}
 							}
 						});
+					});
+			}
+		},
+
+		checkPasswordlessToken: {
+			params: {
+				token: "string"
+			},
+			handler(ctx) {
+				return this.Promise.resolve()
+					.then(() => this.adapter.db.findOne({ passwordlessToken: ctx.params.token }))
+					.then(user => {
+						if (!user)
+							return Promise.reject(new MoleculerClientError("Invalid token!", 400, "INVALID_TOKEN"));
+
+						if (user.passwordlessTokenExpires < Date.now())
+							return Promise.reject(new MoleculerClientError("Token expired!", 400, "TOKEN_EXPIRED"));
+
+						return user;
 					});
 			}
 		}

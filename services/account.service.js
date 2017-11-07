@@ -3,7 +3,7 @@
 const crypto 		= require("crypto");
 const bcrypt 		= require("bcrypt");
 const _ 			= require("lodash");
-const { MoleculerError, MoleculerClientError, MoleculerServerError } = require("moleculer").Errors;
+const { MoleculerError, MoleculerClientError } = require("moleculer").Errors;
 
 module.exports = {
 	name: "account",
@@ -11,9 +11,9 @@ module.exports = {
 
 	settings: {
 		enableSignUp: true,
-		enablePasswordless: true, // TODO
-		enableUsername: true, // TODO
-		sendMail: true, // TODO
+		enablePasswordless: true,
+		enableUsername: true,
+		sendMail: true,
 		verification: true,
 		socialProviders: {},
 
@@ -21,7 +21,7 @@ module.exports = {
 			createUser: "users.create",
 			updateUser: "users.update",
 			findUsers: "users.find",
-			authUser: "users.authenticate",
+			checkPassword: "users.checkPassword",
 			sendMail: "mail.send"
 		}
 	},
@@ -32,8 +32,8 @@ module.exports = {
 		 */
 		register: {
 			params: {
-				username: { type: "string", min: 3, optional: true },
-				password: { type: "string", min: 6, optional: true },
+				username: { type: "string", /*min: 3, */optional: true },
+				password: { type: "string", /*min: 6, */optional: true },
 				email: { type: "email" },
 				fullName: { type: "string", min: 2 },
 				avatar: { type: "string", optional: true },
@@ -44,6 +44,8 @@ module.exports = {
 
 				const params = Object.assign({}, ctx.params);
 				const entity = {};
+				
+				// TODO validate params by settings (username, password...)
 
 				return this.Promise.resolve()
 					// Verify email
@@ -82,19 +84,18 @@ module.exports = {
 					// Generate passwordless token or hash password
 					.then(() => {
 						if (params.password) {
-							entity.passwordless = false;
 							return bcrypt.hash(params.password, 10).then(hash => entity.password = hash);
 						} else if (this.settings.enablePasswordless) {
 							entity.passwordless = true;
 							entity.password = this.generateToken(25);
 						} else {
-							return this.Promise.reject(new MoleculerClientError("Passwordless account is not allowed.", 400, "ERR_PASSWORDLESS_NOT_ALLOWED"));
+							return this.Promise.reject(new MoleculerClientError("Passwordless login is not allowed.", 400, "ERR_PASSWORDLESS_DISABLED"));
 						}
 					})
 
 					// Generate verification token
 					.then(() => {
-						if (this.settings.verification) {
+						if (this.settings.verification && !entity.passwordless) {
 							entity.verified = false;
 							entity.verificationToken = this.generateToken(25);
 						}
@@ -145,8 +146,10 @@ module.exports = {
 		 */
 		passwordless: {
 			handler(ctx) {
-				// 1. Check passwordless token
-				// 2. Set `verified: true` if not verified yet
+				if (!this.settings.enablePasswordless)
+					return this.Promise.reject(new MoleculerError("Passwordless login is not allowed.", 400, "ERR_PASSWORDLESS_DISABLED"));
+
+				return ctx.call("users.checkPasswordlessToken", { token: ctx.params.token });
 			}
 		},
 
@@ -229,20 +232,59 @@ module.exports = {
 				password: { type: "string", optional: true }
 			},
 			handler(ctx) {
-				return ctx.call(this.settings.actions.authUser, ctx.params)
-					.then(user => {
+				let query;
+
+				if (this.settings.enableUsername) {
+					query = {
+						"$or": [
+							{ email: ctx.params.email },
+							{ username: ctx.params.username }
+						]
+					};
+				} else {
+					query = { email: ctx.params.email };
+				}
+
+				return this.Promise.resolve()
+					// Get user 							
+					.then(() => ctx.call(this.settings.actions.findUsers, { query }))
+					.then(users => {
+						if (users.length == 0) 
+							return this.Promise.reject(new MoleculerClientError("User is not exist!", 400, "ERR_USER_NOT_FOUND"));
+
+						const user = users[0];
+
 						// Check verified
 						if (!user.verified) {
-							return this.Promise.reject(new MoleculerClientError("Please activate your account!", 400, "ACCOUNT_NOT_VERIFIED"));
+							return this.Promise.reject(new MoleculerClientError("Please activate your account!", 400, "ERR_ACCOUNT_NOT_VERIFIED"));
 						}
 
 						// Check status
 						if (user.status !== 1) {
-							return this.Promise.reject(new MoleculerClientError("Account is disabled!", 400, "ACCOUNT_DISABLED"));
+							return this.Promise.reject(new MoleculerClientError("Account is disabled!", 400, "ERR_ACCOUNT_DISABLED"));
 						}
 
+						// Check passwordless login
+						if (user.passwordless == true && ctx.params.password)
+							return this.Promise.reject(new MoleculerClientError("This is a passwordless account! Please login without password", 400, "ERR_PASSWORDLESS_WITH_PASSWORD"));
+
 						return user;
-					});
+					})
+
+					// Authenticate
+					.then(user => {
+						if (ctx.params.password) {
+							// Login with password
+							return ctx.call(this.settings.actions.checkPassword, { id: user._id, password: ctx.params.password }).then(() => user);
+						} else if (this.settings.enablePasswordless) {
+							// Send magic link
+							return this.sendMagicLink(ctx, user).then(() => {
+								return this.Promise.reject(new MoleculerError(`An email has been sent to ${user.email} with magic link. Please check your spam folder if it does not arrive.`, 400, "MAGIC_LINK_SENT"));
+							});
+						} else {
+							return this.Promise.reject(new MoleculerError("Passwordless login is not allowed.", 400, "ERR_PASSWORDLESS_DISABLED"));
+						}
+					});				
 			}
 		},
 
@@ -342,6 +384,25 @@ module.exports = {
 	methods: {
 
 		/**
+		 * Send login magic link to user email
+		 * 
+		 * @param {Context} ctx 
+		 * @param {Object} user 
+		 */
+		sendMagicLink(ctx, user) {
+			const token = this.generateToken(25);
+
+			return ctx.call(this.settings.actions.updateUser, {
+				id: user._id,
+				passwordlessToken: token,
+				passwordlessTokenExpires: Date.now() + 3600 * 1000 // 1 hour
+			})
+				.then(user => {
+					return this.sendMail(ctx, user, "magic-link", { token });
+				});
+		},
+
+		/**
 		 * Send email to the user email address
 		 * 
 		 * @param {Context} ctx 
@@ -351,7 +412,7 @@ module.exports = {
 		 */
 		sendMail(ctx, user, template, data) {
 			if (!this.settings.sendMail)
-				return this.Promiser.resolve(false);
+				return this.Promise.resolve(false);
 
 			return ctx.call(this.settings.actions.sendMail, {
 				to: user.email,
