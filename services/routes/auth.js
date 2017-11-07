@@ -24,7 +24,7 @@ const Passports = {
 			passReqToCallback : true
 		},
 		verify(req, username, password, done) {
-			this.broker.call("users.authenticate", { username, password })
+			this.broker.call("account.login", { username, password })
 				.then(user => done(null, user))
 				.catch(err => done(err));
 		}
@@ -138,8 +138,6 @@ function handleLoginCallback(req, res, provider, err) {
 			return this.sendRedirect(res, "/login");
 	}
 
-	// TODO check status
-	
 	// Successful authentication, redirect home.
 	this.logger.info(`Successful authentication with '${provider}'.`);
 	this.logger.info("User", req.user);

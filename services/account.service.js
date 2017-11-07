@@ -2,28 +2,26 @@
 
 const crypto 		= require("crypto");
 const bcrypt 		= require("bcrypt");
+const _ 			= require("lodash");
 const { MoleculerError, MoleculerClientError, MoleculerServerError } = require("moleculer").Errors;
-
-/**
- * 
- */
 
 module.exports = {
 	name: "account",
+	dependencies: ["users", "mail"],
 
 	settings: {
 		enableSignUp: true,
 		enablePasswordless: true, // TODO
 		enableUsername: true, // TODO
 		sendMail: true, // TODO
-		verification: true, // TODO
+		verification: true,
 		socialProviders: {},
 
 		actions: {
 			createUser: "users.create",
-			getUser: "users.get", // TODO
-			updateUser: "users.update", // TODO
-			findUsers: "users.find", // TODO
+			updateUser: "users.update",
+			findUsers: "users.find",
+			authUser: "users.authenticate",
 			sendMail: "mail.send"
 		}
 	},
@@ -84,8 +82,8 @@ module.exports = {
 					// Generate passwordless token or hash password
 					.then(() => {
 						if (params.password) {
-							entity.password = bcrypt.hash(params.password, 10);
 							entity.passwordless = false;
+							return bcrypt.hash(params.password, 10).then(hash => entity.password = hash);
 						} else if (this.settings.enablePasswordless) {
 							entity.passwordless = true;
 							entity.password = this.generateToken(25);
@@ -109,32 +107,15 @@ module.exports = {
 
 					// Send welcome or verification email
 					.then(user => {
-						return Promise.resolve()
-							.then(() => {
-								if (user.verified) {
-									// Send welcome email
-									ctx.call(this.settings.actions.sendMail, {
-										to: user.email,
-										template: "welcome",
-										data: {
-											name: user.fullName
-										}
-									}, { retry: 3 });
+						if (user.verified) {
+							// Send welcome email
+							this.sendMail(ctx, user, "welcome");
+						} else {
+							// Send verification email
+							this.sendMail(ctx, user, "activate", { token: entity.verificationToken });
+						}						
 
-								} else {
-									// Send verification email
-									ctx.call(this.settings.actions.sendMail, {
-										to: user.email,
-										template: "activate",
-										data: {
-											name: user.fullName,
-											token: entity.verificationToken
-										}
-									}, { retry: 3 });
-
-								}						
-							})
-							.then(() => user);
+						return user;
 					});
 			}
 		},
@@ -143,6 +124,9 @@ module.exports = {
 		 * Verify an account
 		 */
 		verify: {
+			params: {
+				token: { type: "string" }
+			},
 			handler(ctx) {
 				return this.Promise.resolve()
 					// Check verification token
@@ -150,14 +134,7 @@ module.exports = {
 
 					// Send welcome email
 					.then(user => {
-						ctx.call(this.settings.actions.sendMail, {
-							to: user.email,
-							template: "welcome",
-							data: {
-								name: user.fullName
-							}
-						}, { retry: 3 });	
-
+						this.sendMail(ctx, user, "welcome");
 						return user;					
 					});
 			}
@@ -217,9 +194,11 @@ module.exports = {
 				userData: { type: "object" },
 			},
 			handler(ctx) {
-				return ctx.call("users.update", {
+				return ctx.call(this.settings.actions.updateUser, {
 					id: ctx.params.user._id,
-					[`socialLinks.${ctx.params.provider}`]: ctx.params.userData.id
+					[`socialLinks.${ctx.params.provider}`]: ctx.params.userData.id,
+					verified: true, // if not verified yet via email
+					verificationToken: null
 				});
 			}
 		},
@@ -233,10 +212,37 @@ module.exports = {
 				provider: { type: "string" }
 			},
 			handler(ctx) {
-				return ctx.call("users.update", {
+				return ctx.call(this.settings.actions.updateUser, {
 					id: ctx.params.user._id,
 					[`socialLinks.${ctx.params.provider}`]: null
 				});
+			}
+		},
+
+		/**
+		 * Handle local login
+		 */
+		login: {
+			params: {
+				email: { type: "string", optional: true },
+				username: { type: "string", optional: true },
+				password: { type: "string", optional: true }
+			},
+			handler(ctx) {
+				return ctx.call(this.settings.actions.authUser, ctx.params)
+					.then(user => {
+						// Check verified
+						if (!user.verified) {
+							return this.Promise.reject(new MoleculerClientError("Please activate your account!", 400, "ACCOUNT_NOT_VERIFIED"));
+						}
+
+						// Check status
+						if (user.status !== 1) {
+							return this.Promise.reject(new MoleculerClientError("Account is disabled!", 400, "ACCOUNT_DISABLED"));
+						}
+
+						return user;
+					});
 			}
 		},
 
@@ -261,7 +267,7 @@ module.exports = {
 						// There is logged in user. Link to the logged in user
 						return this.Promise.resolve()
 							// Get user 							
-							.then(() => ctx.call("users.find", { query }))
+							.then(() => ctx.call(this.settings.actions.findUsers, { query }))
 							.then(users => {
 								if (users.length > 0) {
 									const user = users[0];
@@ -283,11 +289,13 @@ module.exports = {
 						if (!userData.email)
 							return this.Promise.reject(new MoleculerClientError("Missing e-mail address in social profile", 400, "ERR_NO_SOCIAL_EMAIL"));
 
+						let foundBySocialID = false;
 						return this.Promise.resolve()
-							.then(() => ctx.call("users.find", { query }))
+							.then(() => ctx.call(this.settings.actions.findUsers, { query }))
 							.then(users => {
 								if (users.length > 0) {
 									// User found.
+									foundBySocialID = true;
 									return this.Promise.resolve(users[0]);
 								} else {
 									// Try to search user by email
@@ -296,6 +304,11 @@ module.exports = {
 							})
 							.then(user => {
 								if (user) {
+									// Check status
+									if (user.status !== 1) {
+										return this.Promise.reject(new MoleculerClientError("Account is disabled!", 400, "ACCOUNT_DISABLED"));
+									}
+									
 									// Found the user by email. Update the profile & create link
 									return user;
 								}
@@ -312,7 +325,12 @@ module.exports = {
 									avatar: userData.avatar
 								});
 							})
-							.then(user => ctx.call("account.link", { user, provider, userData }));
+							.then(user => {
+								if (!foundBySocialID)
+									return ctx.call("account.link", { user, provider, userData });
+								
+								return user;
+							});
 					}
 
 				} else
@@ -322,6 +340,28 @@ module.exports = {
 	},
 
 	methods: {
+
+		/**
+		 * Send email to the user email address
+		 * 
+		 * @param {Context} ctx 
+		 * @param {Object} user 
+		 * @param {String} template 
+		 * @param {Object?} data 
+		 */
+		sendMail(ctx, user, template, data) {
+			if (!this.settings.sendMail)
+				return this.Promiser.resolve(false);
+
+			return ctx.call(this.settings.actions.sendMail, {
+				to: user.email,
+				template,
+				data: _.defaultsDeep(data, {
+					name: user.fullName
+				})
+			}, { retry: 3 });
+		},
+
 		/**
 		 * Get user by email
 		 * 
@@ -329,7 +369,7 @@ module.exports = {
 		 * @param {String} email 
 		 */
 		getUserByEmail(ctx, email) {
-			return ctx.call("users.find", { query: { email }})
+			return ctx.call(this.settings.actions.findUsers, { query: { email }})
 				.then(users => users.length > 0 ? users[0] : null);
 		},
 			
@@ -340,7 +380,7 @@ module.exports = {
 		 * @param {String} username 
 		 */
 		getUserByUsername(ctx, username) {
-			return ctx.call("users.find", { query: { username }})
+			return ctx.call(this.settings.actions.findUsers, { query: { username }})
 				.then(users => users.length > 0 ? users[0] : null);
 		},
 
@@ -439,6 +479,11 @@ module.exports = {
 			return res;
 		},
 
+		/**
+		 * Generate a token
+		 * 
+		 * @param {Number} len Token length
+		 */
 		generateToken(len) {
 			return crypto.randomBytes(len).toString("hex");
 		}
