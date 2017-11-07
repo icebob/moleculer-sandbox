@@ -461,7 +461,10 @@ module.exports = {
 				data: _.defaultsDeep(data, {
 					name: user.fullName
 				})
-			}, { retry: 3 });
+			}, { retryCount: 3 })
+				.catch(err => {
+					this.logger.error("Send mail error!", err);
+				});
 		},
 
 		/**
