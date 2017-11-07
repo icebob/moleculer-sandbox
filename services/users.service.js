@@ -27,7 +27,7 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.Promise.resolve()
-					.then(() => this.adapter.db.findById(ctx.params.id))
+					.then(() => this.adapter.db.findOne({ _id: ctx.params.id }))
 					.then(user => {
 						if (!user)
 							return Promise.reject(new MoleculerClientError("User is not exist!", 400, "ERR_USER_NOT_FOUND"));
@@ -82,6 +82,25 @@ module.exports = {
 							return Promise.reject(new MoleculerClientError("Invalid token!", 400, "INVALID_TOKEN"));
 
 						if (user.passwordlessTokenExpires < Date.now())
+							return Promise.reject(new MoleculerClientError("Token expired!", 400, "TOKEN_EXPIRED"));
+
+						return user;
+					});
+			}
+		},
+
+		checkResetPasswordToken: {
+			params: {
+				token: "string"
+			},
+			handler(ctx) {
+				return this.Promise.resolve()
+					.then(() => this.adapter.db.findOne({ resetToken: ctx.params.token }))
+					.then(user => {
+						if (!user)
+							return Promise.reject(new MoleculerClientError("Invalid token!", 400, "INVALID_TOKEN"));
+
+						if (user.resetTokenExpires < Date.now())
 							return Promise.reject(new MoleculerClientError("Token expired!", 400, "TOKEN_EXPIRED"));
 
 						return user;

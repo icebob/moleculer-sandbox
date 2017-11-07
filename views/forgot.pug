@@ -1,0 +1,30 @@
+extends layout
+
+block content
+	.section
+		.container(style="max-width: 600px")
+
+			h1.title Forgot
+			form(action='/forgot', method='post')
+				if messages && messages.error && messages.error.length > 0
+					.field
+						.message.is-danger 
+							each error in messages.error
+								.message-body
+									span.icon
+										i.fa.fa-warning
+									span=  error								
+				if messages && messages.info && messages.info.length > 0
+					.field
+						.message.is-success 
+							each info in messages.info
+								.message-body
+									span.icon
+										i.fa.fa-check
+									span=  info
+				.field
+					label.label(for='email') E-mail:
+					input.input(id='email', name='email')
+
+				.field
+					button.button.is-primary(type='submit', onclick="this.classList.add('is-loading');") Reset password

@@ -138,6 +138,61 @@ module.exports = {
 					this.sendRedirect(res, "/login");
 				});
 		},
+			
+		"GET /forgot"(req, res) {
+			if (req.isAuthenticated())
+				return this.sendRedirect(res, "/");
+
+			this.render(req, res, "forgot");
+		},	
+
+		"POST /forgot"(req, res) {
+			if (req.user)
+				return this.sendRedirect(res, "/");
+
+			this.broker.call("account.forgotPassword", { email: req.body.email })
+				.then(() => {
+					req.flash("info", "Message sent");
+					this.sendRedirect(res, "/forgot");
+				})
+				.catch(err => {
+					req.flash("error", err.message);
+					this.sendRedirect(res, "/forgot");
+				});			
+		},
+		
+		"GET /reset/:token"(req, res) {
+			if (req.user)
+				return this.sendRedirect(res, "/");
+
+			this.broker.call("account.checkResetToken", { token: req.$params.token })
+				.then(() => {
+					this.render(req, res, "reset", { token: req.$params.token });
+				})
+				.catch(err => {
+					req.flash("error", err.message);
+					this.sendRedirect(res, "/reset");
+				});
+		},		
+		
+		"POST /reset/:token"(req, res) {
+			if (req.user)
+				return this.sendRedirect(res, "/");
+
+			this.broker.call("account.resetPassword", { token: req.$params.token, password: req.body.password })
+				.then(user => {
+					req.login(user, err => {
+						if (err)
+							this.sendError(req, res, err);
+
+						this.sendRedirect(res, "/");
+					});
+				})
+				.catch(err => {
+					req.flash("error", err.message);
+					this.sendRedirect(res, "/reset");
+				});
+		},		
 	},
 
 	mappingPolicy: "restrict",

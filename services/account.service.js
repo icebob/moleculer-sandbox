@@ -145,6 +145,9 @@ module.exports = {
 		 * Check passwordless token
 		 */
 		passwordless: {
+			params: {
+				token: { type: "string" }
+			},			
 			handler(ctx) {
 				if (!this.settings.enablePasswordless)
 					return this.Promise.reject(new MoleculerError("Passwordless login is not allowed.", 400, "ERR_PASSWORDLESS_DISABLED"));
@@ -157,12 +160,30 @@ module.exports = {
 		 * Start "forgot password" process
 		 */
 		forgotPassword: {
+			params: {
+				email: { type: "email" }
+			},
 			handler(ctx) {
-				// 1. Check email is exist
-				// 2. Generate a resetPasswordToken
-				// 3. Save the token to user
-				// 4. Send a passwordReset email
+				const token = this.generateToken(25);
 
+				return this.getUserByEmail(ctx, ctx.params.email)
+					// Check email is exist
+					.then(user => {
+						if (!user)
+							return this.Promise.reject(new MoleculerClientError("Email is not registered.", 400, "ERR_EMAIL_NOT_FOUND"));
+
+						// Save the token to user
+						return ctx.call(this.settings.actions.updateUser, {
+							id: user._id,
+							resetToken: token,
+							resetTokenExpires: Date.now() + 3600 * 1000 // 1 hour
+						});
+					})
+					
+					// Send a passwordReset email
+					.then(user => {
+						this.sendMail(ctx, user, "reset-password", { token });
+					});
 			}
 		},
 
@@ -170,8 +191,11 @@ module.exports = {
 		 * Check the reset password token
 		 */
 		checkResetToken: {
+			params: {
+				token: { type: "string" }
+			},			
 			handler(ctx) {
-				// 1. Check the token & expires
+				return ctx.call("users.checkResetPasswordToken", { token: ctx.params.token });
 			}
 		},
 
@@ -179,11 +203,29 @@ module.exports = {
 		 * Reset password
 		 */
 		resetPassword: {
+			params: {
+				token: { type: "string" },
+				password: { type: "string", min: 6 }
+			},			
 			handler(ctx) {
-				// 1. Check the token & expires
-				// 2. Change the password
-				// 		Clear passwordless flag if was
-				// 3. Send password changed email
+				// Check the token & expires
+				return ctx.call("users.checkResetPasswordToken", { token: ctx.params.token })
+					// Change the password
+					.then(user => {
+						return bcrypt.hash(ctx.params.password, 10)
+							.then(hashedPassword => ctx.call(this.settings.actions.updateUser, {
+								id: user._id,
+								password: hashedPassword,
+								passwordless: false,
+								resetToken: null,
+								resetTokenExpires: null
+							}));
+					})
+					.then(user => {
+						this.sendMail(ctx, user, "password-changed");
+						
+						return user;
+					});
 			}
 		},
 
