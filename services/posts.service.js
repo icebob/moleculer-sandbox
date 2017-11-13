@@ -61,7 +61,7 @@ module.exports = {
 	},
 
 	afterConnected() {
-		return this.count().then(count => {
+		return this.adapter.count().then(count => {
 			if (count == 0) {
 				this.seedDB();
 			}

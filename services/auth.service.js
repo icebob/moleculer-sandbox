@@ -3,6 +3,7 @@
 const _ = require("lodash");
 const jwt = require("jsonwebtoken");
 
+// Deprecated
 module.exports = {
 	name: "auth",
 
