@@ -11,7 +11,7 @@ mkdir(path.resolve("data"));
 const Moleculer = require("moleculer");
 
 module.exports = {
-	namespace: "dev",
+	namespace: "sandbox",
 	nodeID: null,
 
 	logger: true,
@@ -47,7 +47,7 @@ module.exports = {
 
 	validation: true,
 	validator: null,
-	metrics: false,
+	metrics: true,
 	metricsRate: 1,
 	statistics: false,
 	internalActions: true,
