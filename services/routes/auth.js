@@ -23,11 +23,14 @@ const Passports = {
 			passwordField: "password",
 			passReqToCallback : true
 		},
-		verify(req, email, password, done) {
+		async verify(req, email, password, done) {
 			// TODO: not working without password (passport-local)
-			this.broker.call("account.login", { email, password })
-				.then(user => done(null, user))
-				.catch(err => done(err));
+			try {
+				const user = await this.broker.call("account.login", { email, password });
+				done(null, user);
+			} catch(err) {
+				done(err);
+			}
 		}
 	},
 
@@ -175,17 +178,20 @@ const Auth = {
 			
 			if (pp.enabled) {
 				this.logger.info("Register Passport provider:", provider);
-				const verify = pp.verify || function verify(req, accessToken, refreshToken, profile, done) {
+				const verify = pp.verify || async function verify(req, accessToken, refreshToken, profile, done) {
 					this.logger.info(`Received '${profile.provider}' profile: `, profile);
+					try {
+						const user = await this.broker.call("account.socialLogin", {
+							provider: profile.provider,
+							profile,
+							accessToken,
+							refreshToken
+						}, { meta: { user: req.user }});
 
-					return this.broker.call("account.socialLogin", {
-						provider: profile.provider,
-						profile,
-						accessToken,
-						refreshToken
-					}, { meta: { user: req.user }})
-						.then(user => done(null, user))
-						.catch(done);
+						done(null, user);
+					} catch(err) {
+						done(err);
+					}
 				};
 				passport.use(new pp.strategy(pp.strategyOptions, verify.bind(this)));
 
@@ -195,10 +201,13 @@ const Auth = {
 
 		passport.serializeUser((user, done) => done(null, user._id));
 
-		passport.deserializeUser((id, done) => {
-			this.broker.call("users.get", { id })
-				.then(user => done(null, user))
-				.catch(done);
+		passport.deserializeUser(async (id, done) => {
+			try {
+				const user = await this.broker.call("users.get", { id });
+				done(null, user);
+			} catch(err) {
+				done(err);
+			}				
 		});
 
 	}

@@ -21,6 +21,6 @@ module.exports = {
 	
 	onBeforeCall(ctx, route, req) {
 		if (req.user)
-			ctx.meta.user = req.use;
+			ctx.meta.user = req.user;
 	}
 };

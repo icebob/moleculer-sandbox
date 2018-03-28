@@ -38,42 +38,42 @@ module.exports = {
 			});
 		},
 
-		"POST /signup"(req, res) {
-			this.broker.call("account.register", req.body)
-				.then(user => {
-					if (user.verified) {
-						// No verification. Auto-login
-						req.login(user, err => {
-							if (err)
-								this.sendError(req, res, err);
+		async "POST /signup"(req, res) {
+			try {
+				const user = await this.broker.call("account.register", req.body);
+				if (user.verified) {
+					// No verification. Auto-login
+					req.login(user, err => {
+						if (err)
+							this.sendError(req, res, err);
 
-							this.sendRedirect(res, "/");
-						});
-					} else {
-						req.flash("info", "Please check your email to activate your account. Thanks for signing up!");
-						return this.sendRedirect(res, "/signup");						
-					}
-				})
-				.catch(err => {
-					if (err.name == "ValidationError") {
-						this.render(req, res, "signup", { 
-							hasValidationError(field) {
-								if (err.data && Array.isArray(err.data))
-									return err.data.find(item => item.field == field);
-							},
-							validationErrorMessage(field) {
-								if (err.data && Array.isArray(err.data)) {
-									const item = err.data.find(item => item.field == field);
-									if (item)
-										return item.message;
-								}
+						this.sendRedirect(res, "/");
+					});
+				} else {
+					req.flash("info", "Please check your email to activate your account. Thanks for signing up!");
+					return this.sendRedirect(res, "/signup");						
+				}
+
+			} catch(err) {
+				if (err.name == "ValidationError") {
+					this.render(req, res, "signup", { 
+						hasValidationError(field) {
+							if (err.data && Array.isArray(err.data))
+								return err.data.find(item => item.field == field);
+						},
+						validationErrorMessage(field) {
+							if (err.data && Array.isArray(err.data)) {
+								const item = err.data.find(item => item.field == field);
+								if (item)
+									return item.message;
 							}
-						});
-					} else {
-						req.flash("error", err.message);
-						return this.sendRedirect(res, "/signup");
-					}
-				});
+						}
+					});
+				} else {
+					req.flash("error", err.message);
+					return this.sendRedirect(res, "/signup");
+				}
+			}
 		},
 			
 		"GET /logout"(req, res) {
@@ -85,58 +85,55 @@ module.exports = {
 			this.sendRedirect(res, "/");
 		},
 
-		"GET /unlink/:provider"(req, res) {
+		async "GET /unlink/:provider"(req, res) {
 			if (req.user) {
-				this.broker.call("account.unlink", { user: req.user, provider: req.$params.provider })
-					.then(() => {
-						req.flash("info", "Account unlinked.");
-						this.sendRedirect(res, "/");
-					})
-					.catch(err => {
-						req.flash("error", err.message);
-						this.sendRedirect(res, "/");
-					});
+				try {
+					await this.broker.call("account.unlink", { user: req.user, provider: req.$params.provider });
+					req.flash("info", "Account unlinked.");
+					this.sendRedirect(res, "/");
+				} catch(err) {
+					req.flash("error", err.message);
+					this.sendRedirect(res, "/");
+				}
 			} else {
 				this.sendRedirect(res, "/login");
 			}
 		},
 
-		"GET /verify/:token"(req, res) {
+		async "GET /verify/:token"(req, res) {
 			if (req.user)
 				return this.sendRedirect(res, "/");
 
-			this.broker.call("account.verify", { token: req.$params.token })
-				.then(user => {
-					req.login(user, err => {
-						if (err)
-							this.sendError(req, res, err);
+			try {
+				const user = await this.broker.call("account.verify", { token: req.$params.token });
+				req.login(user, err => {
+					if (err)
+						this.sendError(req, res, err);
 
-						this.sendRedirect(res, "/");
-					});
-				})
-				.catch(err => {
-					req.flash("error", err.message);
 					this.sendRedirect(res, "/");
 				});
+			} catch(err) {
+				req.flash("error", err.message);
+				this.sendRedirect(res, "/");
+			}
 		},
 
-		"GET /passwordless/:token"(req, res) {
+		async "GET /passwordless/:token"(req, res) {
 			if (req.user)
 				return this.sendRedirect(res, "/");
 
-			this.broker.call("account.passwordless", { token: req.$params.token })
-				.then(user => {
-					req.login(user, err => {
-						if (err)
-							this.sendError(req, res, err);
+			try {
+				const user = await this.broker.call("account.passwordless", { token: req.$params.token });
+				req.login(user, err => {
+					if (err)
+						this.sendError(req, res, err);
 
-						this.sendRedirect(res, "/");
-					});
-				})
-				.catch(err => {
-					req.flash("error", err.message);
-					this.sendRedirect(res, "/login");
+					this.sendRedirect(res, "/");
 				});
+			} catch(err) {
+				req.flash("error", err.message);
+				this.sendRedirect(res, "/login");
+			}
 		},
 			
 		"GET /forgot"(req, res) {
@@ -146,52 +143,49 @@ module.exports = {
 			this.render(req, res, "forgot");
 		},	
 
-		"POST /forgot"(req, res) {
+		async "POST /forgot"(req, res) {
 			if (req.user)
 				return this.sendRedirect(res, "/");
 
-			this.broker.call("account.forgotPassword", { email: req.body.email })
-				.then(() => {
-					req.flash("info", "Message sent");
-					this.sendRedirect(res, "/forgot");
-				})
-				.catch(err => {
-					req.flash("error", err.message);
-					this.sendRedirect(res, "/forgot");
-				});			
+			try {
+				await this.broker.call("account.forgotPassword", { email: req.body.email });
+				req.flash("info", "Message sent");
+				this.sendRedirect(res, "/forgot");
+			} catch(err) {
+				req.flash("error", err.message);
+				this.sendRedirect(res, "/forgot");
+			}
 		},
 		
-		"GET /reset/:token"(req, res) {
+		async "GET /reset/:token"(req, res) {
 			if (req.user)
 				return this.sendRedirect(res, "/");
 
-			this.broker.call("account.checkResetToken", { token: req.$params.token })
-				.then(() => {
-					this.render(req, res, "reset", { token: req.$params.token });
-				})
-				.catch(err => {
-					req.flash("error", err.message);
-					this.sendRedirect(res, "/reset");
-				});
+			try {
+				await this.broker.call("account.checkResetToken", { token: req.$params.token });
+				this.render(req, res, "reset", { token: req.$params.token });
+			} catch(err) {
+				req.flash("error", err.message);
+				this.sendRedirect(res, "/reset");
+			}
 		},		
 		
-		"POST /reset/:token"(req, res) {
+		async "POST /reset/:token"(req, res) {
 			if (req.user)
 				return this.sendRedirect(res, "/");
 
-			this.broker.call("account.resetPassword", { token: req.$params.token, password: req.body.password })
-				.then(user => {
-					req.login(user, err => {
-						if (err)
-							this.sendError(req, res, err);
+			try {
+				const user = await this.broker.call("account.resetPassword", { token: req.$params.token, password: req.body.password });
+				req.login(user, err => {
+					if (err)
+						this.sendError(req, res, err);
 
-						this.sendRedirect(res, "/");
-					});
-				})
-				.catch(err => {
-					req.flash("error", err.message);
-					this.sendRedirect(res, "/reset");
+					this.sendRedirect(res, "/");
 				});
+			} catch(err) {
+				req.flash("error", err.message);
+				this.sendRedirect(res, "/reset");
+			}
 		},		
 	},
 

@@ -23,9 +23,10 @@ module.exports = {
 	},
 
 	methods: {
-		seedDB() {
-			this.logger.info("Seed Posts DB...");
-			return this.broker.call("users.find").then(users => {
+		async seedDB() {
+			try {
+				this.logger.info("Seed Posts DB...");
+				const users = await this.broker.call("users.find");
 				if (users.length == 0) {
 					this.logger.info("Waiting for `users` seed...");
 					setTimeout(this.seedDB, 1000);
@@ -33,39 +34,36 @@ module.exports = {
 				}
 
 				// Create fake posts
-				return Promise.all(_.times(10, () => {
-					return this.broker.call("fake.post").then(fakePost => {
-						return this.adapter.insert({
-							title: fakePost.title,
-							content: fakePost.content,
-							author: users[_.random(users.length - 1)]._id,
-							votes: _.random(10), 
-							createdAt: new Date(), 
-							updatedAt: null
-						});
+				await Promise.all(_.times(10, async () => {
+					const fakePost = await this.broker.call("fake.post");
+					return this.adapter.insert({
+						title: fakePost.title,
+						content: fakePost.content,
+						author: users[_.random(users.length - 1)]._id,
+						votes: _.random(10), 
+						createdAt: new Date(), 
+						updatedAt: null
 					});
-				})).then(() => {
-					this.adapter.count().then(count => this.logger.info(`Generated ${count} posts!`));
-				});
+				}));
 
-			}).catch(err => {
+				const count = await this.adapter.count();
+				this.logger.info(`Generated ${count} posts!`);
+
+			} catch(err) {
 				if (err.name == "ServiceNotFoundError") {
 					this.logger.info("Waiting for `users` service...");
 					setTimeout(this.seedDB, 1000);
 					return;
 				} else
-					return Promise.reject(err);
-			});
-
+					throw err;
+			}
 		}
 	},
 
-	afterConnected() {
-		return this.adapter.count().then(count => {
-			if (count == 0) {
-				this.seedDB();
-			}
-		});		
+	async afterConnected() {
+		const count = await this.adapter.count();
+		if (count == 0)
+			this.seedDB();
 	}
 	
 };
